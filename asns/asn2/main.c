@@ -7,20 +7,38 @@
 
 
 #define BIT_PULL(x)                                 ((uint32_t)1 << (x))
-#define FREQ_12_MHz 1.5
+#define FREQ_12_MHz 12
 void set_DCO(float freq);
 void delay_us(int usec);
 double ret_freq(uint32_t bits_extracted);
+void get_MCLK_out();
+void get_OWNCLK_out();
 
 void main(void)
 {
-
-
+    WDT_A->CTL = WDT_A_CTL_PW | WDT_A_CTL_HOLD;     // stop watchdog timer
 	// Step 1 - set up DCO
 	set_DCO(FREQ_12_MHz);
-	// Step 2 - select right CTL1 values so that MCLK outputs the DCO
-	// Step 2.1 - set SELM =
-	// Step 2.2 - DIVM = 1 
+	get_MCLK_out();
+
+
+	int product;
+	int delay;
+	delay = 50;
+
+    uint32_t bits_extracted = CS->CTL0 & BIT_PULL(16) & BIT_PULL(17) & BIT_PULL(18);
+
+    // bits extracted for - > time
+	while(1){
+	    product = ret_freq(bits_extracted)* delay; // 10^-3 s
+	    set_DCO(product);
+		delay_us(delay);
+
+	}
+
+}
+void get_MCLK_out(){
+
 	CS -> KEY = CS_KEY_VAL;
 	CS -> CTL1 = CS_CTL1_SELM_3 |  CS_CTL1_DIVM__1;
 	CS -> KEY = ~CS_KEY_VAL;
@@ -32,11 +50,15 @@ void main(void)
 	//step 3.2 - connect MCLK to from module
 	//Step 3.3 - set direction to output
 	P4->DIR |= BIT3;
-
-	delay_us(10000);
-
 }
 
+
+void get_OWNCLK_out(){
+
+    P4->SEL0 &= ~BIT1;
+    P4->SEL1 &= ~BIT1;
+    P4->DIR |= BIT1;
+}
 
 void set_DCO(float freq){
 
@@ -93,6 +115,7 @@ double ret_freq(uint32_t bits_extracted){
 }
 
 
+
 // Create function delay_us() to cause a software delay of a specified time.
 // usec =< 50ms*(10^3us/1ms) = 50000us
 void delay_us(int usec){
@@ -102,7 +125,8 @@ void delay_us(int usec){
 	
 	// bits extracted for - > time
 	double period = 1/ ret_freq(bits_extracted); // 10^-3 s
-	
+
+
 	int delay = period * usec;  // Period * delay
 	int i; 
 	for (i = delay; i > 0; i--);
