@@ -5,19 +5,33 @@
  * main.cg
  */
 
-
 #define BIT_PULL(x)                                 ((uint32_t)1 << (x))
-#define FREQ_12_MHz 1.5
+#define FREQ_1_5_MHZ 1.5
+#define FREQ_3_MHZ 3
+#define FREQ_6_MHZ 6
+#define FREQ_12_MHZ 12
+#define FREQ_24_MHZ 24
+#define FREQ_48_MHZ 48
+
 void set_DCO(float freq);
 void delay_us(int usec);
-double ret_freq(uint32_t bits_extracted);
+float ret_freq(uint32_t bits_extracted);
+
+
+struct slopef{
+    float freq;
+    int b;
+    float prop;
+};
+
+int arr[6] = {10, 500, 1000, 2500, 5000, 40000};
 
 void main(void)
 {
 
 
     // Step 1 - set up DCO
-    set_DCO(FREQ_12_MHz);
+    set_DCO(FREQ_48_MHZ);
     // Step 2 - select right CTL1 values so that MCLK outputs the DCO
     // Step 2.1 - set SELM =
     // Step 2.2 - DIVM = 1
@@ -39,9 +53,9 @@ void main(void)
 
     while (1){
         P4->OUT |= BIT1;
-        delay_us(5000);
+        delay_us(arr[0]);
         P4->OUT &= ~BIT1;
-        delay_us(5000);
+        delay_us(arr[0]);
     }
 
 }
@@ -70,51 +84,74 @@ void set_DCO(float freq){
             CS->CTL0 = CS_CTL0_DCORSEL_4;
         //range(32,48)
         }else{
-            CS->CTL0 = CS_CTL0_DCORSEL_5;
-            // next step to assign DCOTUNE dec_ret in hex
+            /* Transition to VCORE Level 1: AM0_LDO --> AM1_LDO */
+            while ((PCM->CTL1 & PCM_CTL1_PMR_BUSY));
+             PCM->CTL0 = PCM_CTL0_KEY_VAL | PCM_CTL0_AMR_1;
+            while ((PCM->CTL1 & PCM_CTL1_PMR_BUSY));
+            /* Configure Flash wait-state to 1 for both banks 0 & 1 */
+            FLCTL->BANK0_RDCTL = (FLCTL->BANK0_RDCTL &
+             ~(FLCTL_BANK0_RDCTL_WAIT_MASK)) | FLCTL_BANK0_RDCTL_WAIT_1;
+            FLCTL->BANK1_RDCTL = (FLCTL->BANK0_RDCTL &
+             ~(FLCTL_BANK1_RDCTL_WAIT_MASK)) | FLCTL_BANK1_RDCTL_WAIT_1;
+            CS->CTL0 = 0; // Reset tuning parameters
+            CS->CTL0 = CS_CTL0_DCORSEL_5; // Set DCO to 48MHz
+            /* Select MCLK = DCO, no divider */
+            CS->CTL1 = CS->CTL1 & ~(CS_CTL1_SELM_MASK | CS_CTL1_DIVM_MASK) |CS_CTL1_SELM_3;
         }
         CS->KEY = ~CS_KEY_VAL;
     }
 }
 
-
+float freq;
+   int b;
+   float prop;
 // is it will ret the frequency of the bits_extracted
-double ret_freq(uint32_t bits_extracted){
+struct slopef ret_freq_prop(uint32_t bits_extracted){
         //range(1.5,2)
         if (bits_extracted == CS_CTL0_DCORSEL_0)
-            return 1.5;
+            return (struct slopef){1.5,0, 4.8}; //{freq, b value, prop}
         //range(2,4)/
         if (bits_extracted == CS_CTL0_DCORSEL_1)
-            return 3;
+            return (struct slopef){3.0,0,1.214};
         //range(4,8)
         else if (bits_extracted == CS_CTL0_DCORSEL_2)
-            return 6;
+            return (struct slopef){6,0,.303};
         //range(8,16)
         else if (bits_extracted == CS_CTL0_DCORSEL_3 )
-            return 12;
+            return (struct slopef){12,0, .0758};
         //range(16,32)
         else if (bits_extracted == CS_CTL0_DCORSEL_4 )
-            return 24;
+            return (struct slopef){24,0,.01892};
         //range(32,48)
         else
-            return 48;
-
+            return (struct slopef){48,0,1};
 }
 
 
 // Create function delay_us() to cause a software delay of a specified time.
 // usec =< 50ms*(10^3us/1ms) = 50000us
 void delay_us(int usec){
-    // Lets reverse engineer this bitch
 
-    uint32_t bits_extracted = CS->CTL0 & BIT_PULL(16) & BIT_PULL(17) & BIT_PULL(18);
+    if (usec == 0)
+        return;
 
+    uint32_t bits_extracted = CS->CTL0;
+     //BIT_PULL(16) & BIT_PULL(17) & BIT_PULL(18);
+
+    struct slopef freq_prop = ret_freq_prop(bits_extracted);
     // bits extracted for - > time
-    double period = 1/ ret_freq(bits_extracted); // 10^-3 s
+    float time= 1/freq_prop.freq; // 10^-3 s
 
-    int delay = period * usec;  // Period * delay
+
+    int delay;
+
+    //if (freq_prop.freq == 1.5 || freq_prop.freq == 3){
+    delay = (time/freq_prop.prop)* usec + freq_prop.b;  // cycles
+
+
+
     int i;
-    for (i = delay; i > 0; i--);
+    for (i = 0; i < delay; i++);
 
 }
 
