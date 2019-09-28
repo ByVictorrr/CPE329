@@ -124,7 +124,7 @@ struct slopef ret_freq_prop(uint32_t bits_extracted){
             return (struct slopef){24,0,.01892};
         //range(32,48)
         else
-            return (struct slopef){48,0,1};
+            return (struct slopef){48,0,.00517};
 }
 
 
