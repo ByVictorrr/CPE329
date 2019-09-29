@@ -16,7 +16,7 @@
 
 void set_DCO(float freq);
 void delay_us(int usec);
-float ret_freq(uint32_t bits_extracted);
+struct slopef ret_freq_prop(uint32_t bits_extracted);
 
 
 struct slopef{

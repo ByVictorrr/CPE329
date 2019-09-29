@@ -2,6 +2,11 @@
 #include "delay.h"
 
 
+struct slopef{
+    float freq;
+    int b;
+    float prop;
+};
 void set_DCO(float freq){
 
     if (freq >= 1.5 && freq<=48){ //assumed in Mhz
