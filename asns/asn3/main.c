@@ -14,7 +14,7 @@
 #define N DB7
 #define F DB6
 
-#define B ~DB4
+#define B DB4
 #define C DB5
 #define D DB6
 

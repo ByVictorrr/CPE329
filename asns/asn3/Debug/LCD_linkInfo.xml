@@ -2,7 +2,7 @@
 <link_info>
    <banner>TI ARM Linker Unix v18.12.2.LTS</banner>
    <copyright>Copyright (c) 1996-2018 Texas Instruments Incorporated</copyright>
-   <link_time>0x5d905b61</link_time>
+   <link_time>0x5d905cfb</link_time>
    <link_errors>0x0</link_errors>
    <output_file>LCD.out</output_file>
    <entry_point>
