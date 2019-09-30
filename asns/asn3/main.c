@@ -120,6 +120,9 @@ void Init_LCD(){
 }
 // move the cursor to the top left of the LCD
 void Home_LCD(){
+	uint16_t arr[][4] = {{~DB4,~DB5,~DB6,~DB7},{DB4, I_D, DB6, ~DB7}};
+	set_LCD(1520, arr[0]);
+	set_LCD(1520, arr[1]);
 
 }
 // Write a char to the lcd
@@ -142,6 +145,7 @@ void Write_char_LCD(char c){
     P2->OUT &= ~EN; //turn off enable
 
 }
+
 // write a string to a specified location on the lcd
 void Write_string_LCD(char *str){
     int i = 0;
