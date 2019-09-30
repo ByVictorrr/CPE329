@@ -17,6 +17,7 @@ main.obj: /opt/ccstudio/ccs/ccs_base/arm/include/CMSIS/core_cm4.h
 main.obj: /opt/ccstudio/ccs/ccs_base/arm/include/CMSIS/cmsis_compiler.h
 main.obj: /opt/ccstudio/ccs/ccs_base/arm/include/CMSIS/cmsis_ccs.h
 main.obj: /opt/ccstudio/ccs/ccs_base/arm/include/system_msp432p401r.h
+main.obj: ../delay.h
 
 ../main.c: 
 /opt/ccstudio/ccs/ccs_base/arm/include/msp.h: 
@@ -35,3 +36,4 @@ main.obj: /opt/ccstudio/ccs/ccs_base/arm/include/system_msp432p401r.h
 /opt/ccstudio/ccs/ccs_base/arm/include/CMSIS/cmsis_compiler.h: 
 /opt/ccstudio/ccs/ccs_base/arm/include/CMSIS/cmsis_ccs.h: 
 /opt/ccstudio/ccs/ccs_base/arm/include/system_msp432p401r.h: 
+../delay.h: 
