@@ -60,13 +60,13 @@ struct slopef ret_freq_prop(uint32_t bits_extracted){
         }
         //range(2,4)/
         if (bits_extracted == CS_CTL0_DCORSEL_1)
-            return (struct slopef){3.0,-200,1.214};
+            return (struct slopef){3.0,0,1.214};
         //range(4,8)
         else if (bits_extracted == CS_CTL0_DCORSEL_2)
             return (struct slopef){6,0,.303};
         //range(8,16)
         else if (bits_extracted == CS_CTL0_DCORSEL_3 )
-            return (struct slopef){12,-14, .0758};
+            return (struct slopef){12,0, .0758};
         //range(16,32)+
         else if (bits_extracted == CS_CTL0_DCORSEL_4 )
             return (struct slopef){24,0,.01892};

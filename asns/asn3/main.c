@@ -35,6 +35,7 @@ RS:P2.5
 */
 
 
+
 /**
  * main.c
  */
@@ -51,8 +52,6 @@ void set_outputs(){
 	P2->SEL1 &= ~BIT7 & ~BIT6 & ~BIT5;
 	// step 4 - turn direction on
 	P2->DIR |= BIT7 | BIT6 | BIT5;
-
-
 }
 
 
@@ -106,10 +105,10 @@ void Init_LCD(){
 	set_LCD(40000,arr[0]);
 	//====== For function set ========
 	set_LCD(37,arr[1]);
-	set_LCD(0,arr[2]);
+	set_LCD(37,arr[2]);
 	//====== For function set ========
 	set_LCD(37,arr[3]);
-	set_LCD(0,arr[4]);
+	set_LCD(37,arr[4]);
 	//====== For Display  ON/OFF control===
 	display_ON_OFF_CTRL();
 	//====== Display clear=============
@@ -123,15 +122,21 @@ void Home_LCD(){
 }
 // Write a char to the lcd
 void Write_char_LCD(char c){
-        delay_us(12);
-        P2->OUT &= ~RW;
-        P2->OUT |= RS;
+    delay_us(0);
+	P2->OUT &= ~(EN | RS | RW); // set EN, RS, RW, low
+	int i;
+	P4->OUT = (int)c & 0xF0;
+	P2->OUT |= EN; // pulse EN
+	delay_us(0); // delay >= 480ns
+	P2->OUT &= ~EN; //turn off enable
+	 delay_us(0);
+	P2->OUT &= ~(EN | RS | RW); // set EN, RS, RW, low
+	int i;
+	P4->OUT = (int)c & 0x0F;
+	P2->OUT |= EN; // pulse EN
+	delay_us(0); // delay >= 480ns
+	P2->OUT &= ~EN; //turn off enable
 
-        P2->OUT &= ~EN;
-        P4->OUT = c;
-        P2->OUT |= EN;
-        delay_us(0);
-        P2->OUT |= ~EN;
 
 }
 // write a string to a specified location on the lcd
