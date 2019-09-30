@@ -104,7 +104,7 @@ void Init_LCD(){
     };
 	set_LCD(40000,arr[0]);
 	//====== For function set ========
-	set_LCD(37,arr[1]);
+	set_LCD(37,arr[1]); // CHECK CHECK CHECK
 	set_LCD(37,arr[2]);
 	//====== For function set ========
 	set_LCD(37,arr[3]);
@@ -131,8 +131,8 @@ void Write_char_LCD(char c){
 	P2->OUT &= ~EN; //turn off enable
 	 delay_us(0);
 	P2->OUT &= ~(EN | RS | RW); // set EN, RS, RW, low
-	int i;
-	P4->OUT = (int)c & 0x0F;
+	int i; // CHECK CHECK CHECK
+	P4->OUT = (int)c & 0x0F; // CHECK CHECK CHECK
 	P2->OUT |= EN; // pulse EN
 	delay_us(0); // delay >= 480ns
 	P2->OUT &= ~EN; //turn off enable
