@@ -131,3 +131,11 @@ void Write_string_LCD(char *str){
         Write_char_LCD(str[i]);
     }
 }
+
+void next_line_pos(){
+    uint16_t arr[2][4] = {{~DB4, ~DB5, DB6, DB7},
+                     {~DB4, ~DB4, ~DB6, ~DB7}};
+    set_LCD(1,arr[0]);
+    set_LCD(0, arr[1]);
+
+}
