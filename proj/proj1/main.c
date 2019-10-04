@@ -8,11 +8,16 @@
 
 
 /* * - how to enter one of these sequences*/
-#define RESET_SEQ "***"
-#define CREATE_USER_SEQ "***"
-#define LOGIN_SEQ "log*"
-#define EXIT_SEQ "666*"
+#define RESET_SEQ "69"
+#define CREATE_USER_SEQ "99"
+#define LOGIN_SEQ "11"
+#define EXIT_SEQ "66"
 
+
+//========READ until enter char fn=========
+#define ENTER_CHAR '*'
+#define MAX_CHARS 10
+//=======================================
 
 
 struct user{
@@ -34,6 +39,24 @@ int users_ptr = 0;
 /*Sequence to clear the old in key: **8   */
 
 
+// Description: general functions that takes user input until ENTER pressed
+char *read_key_until_enter(){
+	char *str;
+	int str_ptr = 0;
+	str = (char *)calloc(MAX_CHARS,sizeof(char)+1);
+	// Cond 1 - keep reading till you get passed the MAX chars
+	while(str_ptr < MAX_CHARS){
+		// ========Step 1 - check if the keypad is pushed=====
+		if ((str[str_ptr] = isKeychar(4,3)) != '\0' && str[str_ptr] != '*'){
+			ptr++;
+		// 
+		}else if (str[str_ptr] == ENTER_CHAR){
+			break;
+		}
+	}
+	return str;
+}
+
 
 // returns: 0 if read_key() isnt in lookup
 // returns: anything else 0f read_key()  is in lookup
@@ -53,12 +76,27 @@ signed char isKeychar(int rows, int cols){
 // Description: if log in then print to lcd "unlocked"
 ///			  : else say not unlocked an exit
 void login(){
-
+	
 }
 
 
+#define QUIT "888"
 // #TODO - finish the new user fn
 struct user new_user(){
+	char user_sequence_key[MAX];
+	int ptr
+	Write_string_LCD("Enter Username");
+	// step 1 - check to see if the 
+	while(1){
+		
+
+		// cond 2 - check to QUIT is found in user_sequence_key
+		if (strstr(user_sequence_key, QUIT)  != NULL){
+			break;
+		}
+	}
+
+	
 
 }
 
@@ -70,7 +108,7 @@ void main(void)
 	// Var 1 - to make get sequence of char
 	static char sequence_key[MAX];
 	// Var 2 - ptr to the ounter_key
-	static uint8_t sequence_ptr = 0
+	static uint8_t sequence_ptr = 0;
 	
 
 	while (1){	
