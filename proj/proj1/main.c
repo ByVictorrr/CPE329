@@ -113,11 +113,15 @@ void main(void)
 {
 
 	// Var 1 - to make get sequence of char
-	char *sequence_key;
-	
-
+	char *sequence_key;	
+	Init_LCD();
+    Keypad_init();
 	// Go until MAX users are created
 	while (users_ptr < USER_MAX){	
+
+		Write_str_LCD("options 1- create user");
+		next_line_pos();
+		Write_str_LCD("option 2- login");
 
 		// ========Step 1 - check to see if enter was just pressed=====
 		sequence_key = user_read_key_until_enter();
