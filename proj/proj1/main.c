@@ -24,6 +24,7 @@ struct user{
 	char username[MAX];
 	char password[MAX];
 };
+
 struct user users[MAX_USERS];
 int users_ptr = 0;
 
@@ -115,7 +116,8 @@ void main(void)
 	char *sequence_key;
 	
 
-	while (1){	
+	// Go until MAX users are created
+	while (users_ptr < USER_MAX){	
 
 		// ========Step 1 - check to see if enter was just pressed=====
 		sequence_key = user_read_key_until_enter();
@@ -123,13 +125,10 @@ void main(void)
 		// Cond 1 - see if the sequence is to create the user
 		}if (strcmp(sequence_key, CREATE_USER_SEQ) == 0){
 			new_user(users, &users_ptr);
-
 		// Cond 2 - see if the sequence is the login user
 		}else if(strcmp(sequence_key, LOGIN_SEQ) == 0){
 			login_user();
-		}
-
-		
+		}		
 		delay_us(10000);
 		// Anything clears the sequence_key
 		free(sequence_key);
