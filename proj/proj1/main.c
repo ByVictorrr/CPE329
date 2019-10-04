@@ -48,9 +48,11 @@ char *read_key_until_enter(){
 	while(str_ptr < MAX_CHARS){
 		// ========Step 1 - check if the keypad is pushed=====
 		if ((str[str_ptr] = isKeychar(4,3)) != '\0' && str[str_ptr] != '*'){
-			ptr++;
+			str_ptr++;
+            delay_us(500000);
 		// 
 		}else if (str[str_ptr] == ENTER_CHAR){
+            delay_us(500000);
 			break;
 		}
 	}
@@ -76,7 +78,39 @@ signed char isKeychar(int rows, int cols){
 // Description: if log in then print to lcd "unlocked"
 ///			  : else say not unlocked an exit
 void login(){
-	
+	char *usr_na = NULL;
+    char *pss_wd = NULL;
+    int i = 0;
+    int found = 0;
+    
+    Write_string_LCD("Username:");
+    delay_us(1000000);
+    next_line_pos();
+    delay_us(1000000);
+    
+    usr_na = read_key_until_enter();
+    for (i=0 ; i < MAX_USERS ; i++){
+        // see if there is user of that username in memory
+        if (strcmp (usr_na, users[i].username) == 0){
+            found = 1;
+            break;
+        }
+    }
+    
+    if (found){
+        Write_string_LCD("LOCKED");
+        delay_us(700000);
+        next_line_pos();
+        delay_us(700000);
+        Write_string_LCD("Enter Key");
+        delay_us(1000000);
+    }else{
+        return 1;
+    }
+    
+    
+    
+    
 }
 
 
