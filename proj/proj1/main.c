@@ -83,6 +83,9 @@ void login(){
     int i = 0;
     int found = 0;
     
+    Clear_LCD();
+    delay_us(500000);
+    
     Write_string_LCD("Username:");
     delay_us(1000000);
     next_line_pos();
@@ -98,19 +101,43 @@ void login(){
     }
     
     if (found){
-        Write_string_LCD("LOCKED");
-        delay_us(700000);
-        next_line_pos();
-        delay_us(700000);
-        Write_string_LCD("Enter Key");
-        delay_us(1000000);
+        while(1){
+            Write_string_LCD("LOCKED");
+            delay_us(700000);
+            next_line_pos();
+            delay_us(700000);
+            Write_string_LCD("Enter Key");
+            delay_us(1000000);
+            while(1){
+                if (isKeychar(4,3) != '\0'){
+                    break;
+                }
+                delay_us(5000);
+            }
+            Clear_LCD();
+            delay_us(50000);
+            
+            pss_wd = read_key_until_enter();
+            delay_us(50000);
+            
+            if(strcmp(pss_wd, users[i].password) == 0 ){
+                //psswd is the same as memory 
+                //print unlocked;
+                free(usr_na);
+                free(pss_wd);
+                Clear_LCD();
+                delay_us(700000);
+                Write_string_LCD("UNCLOEDKC");
+                delay_us(700000);
+                return 0;
+            }
+            
+            free(usr_na);
+            free(pss_wd);
+        }
     }else{
         return 1;
     }
-    
-    
-    
-    
 }
 
 
