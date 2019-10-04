@@ -49,8 +49,8 @@ char *read_key_until_enter(){
 		// ========Step 1 - check if the keypad is pushed=====
 		if ((str[str_ptr] = isKeychar(4,3)) != '\0' && str[str_ptr] != '*'){
 			str_ptr++;
+			Write_char_LCD(str[str_ptr]);
             delay_us(500000);
-		// 
 		}else if (str[str_ptr] == ENTER_CHAR){
             delay_us(500000);
 			break;
@@ -143,21 +143,28 @@ void login(){
 
 #define QUIT "888"
 // #TODO - finish the new user fn
-struct user new_user(){
-	char user_sequence_key[MAX];
-	int ptr
-	Write_string_LCD("Enter Username");
-	// step 1 - check to see if the 
-	while(1){
-		
-
-		// cond 2 - check to QUIT is found in user_sequence_key
-		if (strstr(user_sequence_key, QUIT)  != NULL){
-			break;
-		}
-	}
-
+void new_user(struct user *users, int *users_ptr){
+	char *user_key;
+	char *pass_key;
 	
+
+	Write_string_LCD("Enter Username");
+	// Cond 1 - if the username_sequence at the base address is '\0' means user pressed enter
+	if ((user_key = user_read_key_until_enter()) == '\0')
+		return;
+	}
+	
+	Write_string_LCD("Enter Password");
+	// Cond 2 - if the password_sequence at the base address is '\0' means user pressed enter
+	if ((pass_key = user_read_key_until_enter()) == '\0'){
+		return; // #TODO or return something that indicates that the struct is empty
+	}
+	
+	memcpy(users[users_ptr].username, user_key);
+	memcpy(users[users_ptr].password, pass_key);
+	free(user_key);
+	free(pass_key);
+	*users_ptr += 1;
 
 }
 
@@ -167,32 +174,29 @@ void main(void)
 {
 
 	// Var 1 - to make get sequence of char
-	static char sequence_key[MAX];
-	// Var 2 - ptr to the ounter_key
-	static uint8_t sequence_ptr = 0;
-	
+	char *sequence_key;	
+	Init_LCD();
+    Keypad_init();
+	// Go until MAX users are created
+	while (users_ptr < USER_MAX){	
 
-	while (1){	
+		Write_str_LCD("options 1- create user");
+		next_line_pos();
+		Write_str_LCD("option 2- login");
 
-		// ========Step 1 - check if the keypad is pushed=====
-		if ((sequence_ptr[sequence_ptr] = isKeychar(4,3)) != '\0'){
-			sequence_ptr++;
-		}
-
+		// ========Step 1 - check to see if enter was just pressed=====
+		sequence_key = user_read_key_until_enter();
 		// ======Step 2 - go through each option=========
-		// Cond 1 - see if the sequence of chars is the reset_seq
-		if (strcmp(sequence_key, RESET_SEQ) == 0){
-			// Reset all the counter_key
-			memset(sequence_key, '\0', MAX);
-		// Cond 2 - see if the sequence is to create the user
-		}else if (strcmp(counter_key, CREATE_USER_SEQ) == 0){
-			users[user_ptr++] = new_user();
-
-		}else if(strcmp(counter_key, LOGIN_SEQ) == 0){
+		// Cond 1 - see if the sequence is to create the user
+		}if (strcmp(sequence_key, CREATE_USER_SEQ) == 0){
+			new_user(users, &users_ptr);
+		// Cond 2 - see if the sequence is the login user
+		}else if(strcmp(sequence_key, LOGIN_SEQ) == 0){
 			login_user();
-		}	
-
+		}		
 		delay_us(10000);
+		// Anything clears the sequence_key
+		free(sequence_key);
 
 	}
 
