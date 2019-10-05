@@ -21,6 +21,7 @@ const signed char lookup_m[4][3] = {
 
 //========READ until enter char fn=========
 #define ENTER_CHAR '#'
+#define EXIT_CHAR '*'
 #define MAX_CHARS 10
 //=======================================
 #define CREATE_USER (signed char)'1'
@@ -34,7 +35,7 @@ struct user{
 int users_ptr = 0;
 char isKeychar(int rows, int cols);
 char *read_key_until_enter();
-void login();
+int login();
 void new_user(struct user *users, int *users_ptr);
 void cpy_chars(char *des, char *src, int size);
 
@@ -49,9 +50,10 @@ void cpy_chars(char *des, char *src, int size);
 char isKeychar(int rows, int cols){
     signed char key;
     int i, j;
+    delay_us(10000);
+    key = read_key();
     for (i = 0; i < rows; i++){
         for (j = 0; j < cols; j++){
-            key = read_key();
             if ( key == lookup_m[i][j]) // #TODO put lookup in header for Keypad.h
                 return key;
         }
@@ -65,23 +67,24 @@ char isKeychar(int rows, int cols){
 
 // Description: general functions that takes user input until ENTER pressed
 char *read_key_until_enter(){
-    char *str;
-    int str_ptr = 0;
-    str = (char *)calloc(MAX_CHARS+1,sizeof(char));
-    Clear_LCD(100000);
-    // Cond 1 - keep reading till you get passed the MAX chars
-    while(str_ptr < MAX_CHARS){
-        // ========Step 1 - check if the keypad is pushed=====
-        if ((str[str_ptr] = isKeychar(4,3)) != '\0' && str[str_ptr] != ENTER_CHAR){
+	char *str;
+	int str_ptr = 0;
+	next_line_pos();
+	str = (char *)calloc(MAX_CHARS,sizeof(char)+1);
+	// Cond 1 - keep reading till you get passed the MAX chars
+	while(str_ptr < MAX_CHARS){
+		// ========Step 1 - check if the keypad is pushed=====
+		if ((str[str_ptr] = isKeychar(4,3)) != '\0' && str[str_ptr] != ENTER_CHAR){
             Write_char_LCD(str[str_ptr]);
-            str_ptr++;
-        }else if (str[str_ptr] == ENTER_CHAR){
-            break;
-        }
-    }
-    return str;
+			str_ptr++;
+            delay_us(500000);
+		}else if (str[str_ptr] == ENTER_CHAR){
+            delay_us(500000);
+			break;
+		}
+	}
+	return str;
 }
-
 
 void main(void)
 {
@@ -92,10 +95,14 @@ void main(void)
     Keypad_init();
 	// Go until MAX users are created
 	while (users_ptr < MAX_USERS){
-
-		Write_string_LCD("options 1- create user");
+	    delay_us(100000);
+		Write_string_LCD("1.Create");
+        delay_us(1000000);
 		next_line_pos();
-		Write_string_LCD("option 2 - login");
+        delay_us(1000000);
+		Write_string_LCD("2.Login");
+        delay_us(1000000);
+
 
 		// ========Step 1 - check to see if enter was just pressed=====
 		// ======Step 2 - go through each option=========
@@ -103,13 +110,26 @@ void main(void)
 		if ((key=read_key()) == CREATE_USER)
 			new_user(users, &users_ptr);
 		// Cond 2 - see if the sequence is the login user
-		else if (key == LOGIN)
-			login();
+		else if (key == LOGIN){
+            //When we're in login mode, if user_name is found then we move to password (return 0) 
+            //otherwise, we keep asking for the right username. (return 1) 
+			/*while(1){
+                if(login() == 0)
+                    break;
+                }
+               */
+		    login();
+            }
+        }
 
-		delay_us(10000);
+		delay_us(500000);
 		Clear_LCD();
+		delay_us(100000);
+		Home_LCD();
+		//next_line_pos();
+		//delay_us(100000);
+		//Write_string_LCD("HI");
 
-	}
 
 
 }
@@ -128,15 +148,15 @@ void init_user(){
 // #TODO : login
 // Description: if log in then print to lcd "unlocked"
 ///           : else say not unlocked an exit
-void login(){
-    char *usr_na = NULL;
+int login(){
+	char *usr_na = NULL;
     char *pss_wd = NULL;
     int i = 0;
     int found = 0;
-
+    
     Clear_LCD();
     delay_us(500000);
-
+    
     Write_string_LCD("Username:");
     delay_us(1000000);
     next_line_pos();
@@ -157,16 +177,18 @@ void login(){
             delay_us(700000);
             next_line_pos();
             delay_us(700000);
-            Write_string_LCD("Enter Key");
+            Write_string_LCD("ENTER KEY");
             delay_us(1000000);
-            while(1){
+           /* while(1){
                 if (isKeychar(4,3) != '\0'){
                     break;
                 }
                 delay_us(5000);
             }
+            */
             Clear_LCD();
             delay_us(50000);
+
 
             pss_wd = read_key_until_enter();
             delay_us(50000);
@@ -178,16 +200,20 @@ void login(){
                 free(pss_wd);
                 Clear_LCD();
                 delay_us(700000);
-                Write_string_LCD("UNCLOEDKC");
+                Write_string_LCD("UNLOCKED");
                 delay_us(700000);
-                //return 0;
+                return 0;
             }
-
             free(usr_na);
             free(pss_wd);
         }
     }else{
-       //return 1;
+        Clear_LCD();
+        delay_us(700000);
+        Write_string_LCD(usr_na);
+        next_line_pos();
+        Write_string_LCD("Not Found!");
+        return 1;
     }
 }
 
@@ -197,16 +223,21 @@ void new_user(struct user *users, int *users_ptr){
     char *user_key = NULL;
     char *pass_key = NULL;
     init_user();
-   // Home_LCD();
-    Write_string_LCD("user name fam");
+
+    Clear_LCD();
     delay_us(100000);
+    Write_string_LCD("Enter Username");
+    delay_us(1000000);
+
     // Cond 1 - if the username_sequence at the base address is '\0' means user pressed enter
     if (*(user_key = read_key_until_enter()) == '\0')
         return;
 
 
     Clear_LCD();
+    delay_us(100000);
     Write_string_LCD("Enter Password");
+    delay_us(1000000);
     // Cond 2 - if the password_sequence at the base address is '\0' means user pressed enter
     if (*(pass_key = read_key_until_enter()) == '\0')
         return; // #TODO or return something that indicates that the struct is empty
