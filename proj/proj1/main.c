@@ -1,11 +1,21 @@
 #include "msp.h"
 #include "LCD.h"
+#include "delay.h"
 #include "Keypad.h"
 #include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
-#define MAX 1000
+
+#define NULL 0
+
 #define MAX_USERS 10
-
+const signed char lookup_m[4][3] = {
+            {'1','2','3'},
+            {'4','5','6'},
+            {'7','8', '9'},
+            {'*', '0', '#'}
+};
 
 /* * - how to enter one of these sequences*/
 #define RESET_SEQ "69"
@@ -18,22 +28,40 @@
 #define ENTER_CHAR '*'
 #define MAX_CHARS 10
 //=======================================
-
+#define CREATE_USER (signed char)'1'
+#define LOGIN (signed char)'2'
 
 struct user{
-	char username[MAX];
-	char password[MAX];
-};
+	char username[MAX_CHARS];
+	char password[MAX_CHARS];
+} users[MAX_USERS];
 
-struct user users[MAX_USERS];
 int users_ptr = 0;
-
-
-
+char isKeychar(int rows, int cols);
+char *read_key_until_enter();
+int login();
+void new_user(struct user *users, int *users_ptr);
+void cpy_chars(char *des, char *src, int size);
 
 /**
  * main.c
  */
+
+
+
+// returns: 0 if read_key() isnt in lookup
+// returns: anything else 0f read_key()  is in lookup
+char isKeychar(int rows, int cols){
+    signed char key;
+    int i, j;
+    for (i = 0; i < rows; i++){
+        for (j = 0; j < cols; j++){
+            if ( key == lookup_m[i][j]) // #TODO put lookup in header for Keypad.h
+                return key;
+        }
+    }
+    return '\0';
+}
 
 /*Sequence to create a new user: ***  */
 /*Sequence to clear the old in key: **8   */
@@ -48,8 +76,8 @@ char *read_key_until_enter(){
 	while(str_ptr < MAX_CHARS){
 		// ========Step 1 - check if the keypad is pushed=====
 		if ((str[str_ptr] = isKeychar(4,3)) != '\0' && str[str_ptr] != '*'){
+            Write_char_LCD(str[str_ptr]);
 			str_ptr++;
-			Write_char_LCD(str[str_ptr]);
             delay_us(500000);
 		}else if (str[str_ptr] == ENTER_CHAR){
             delay_us(500000);
@@ -57,27 +85,81 @@ char *read_key_until_enter(){
 		}
 	}
 	return str;
+
+/*    char *str;
+    int str_ptr = 0;
+    str = (char *)calloc(MAX_CHARS+1,sizeof(char));
+    // Cond 1 - keep reading till you get passed the MAX chars
+    while(str_ptr < MAX_CHARS){
+        // ========Step 1 - check if the keypad is pushed=====
+        if ((str[str_ptr] = isKeychar(4,3)) != '\0' && str[str_ptr] != '*'){
+            Write_char_LCD(str[str_ptr]);
+            str_ptr++;
+        }else if (str[str_ptr] == ENTER_CHAR){
+            break;
+        }
+    }
+    return str;
+*/
 }
 
 
-// returns: 0 if read_key() isnt in lookup
-// returns: anything else 0f read_key()  is in lookup
-signed char isKeychar(int rows, int cols){
+void main(void)
+{
+
+	// Var 1 - to make get sequence of char
 	signed char key;
-	int i, j;
-	for (i = 0; i < rows; i++){
-		for (j = 0; j < cols; j++){
-			if ( key == lookup[i][j]) // #TODO put lookup in header for Keypad.h
-				return key;
-		}
+	Init_LCD();
+    Keypad_init();
+	// Go until MAX users are created
+	while (users_ptr < MAX_USERS){
+
+		Write_string_LCD("options 1- create user");
+        delay_us(1000000);
+		next_line_pos();
+        delay_us(1000000);
+		Write_string_LCD("option 2 - login");
+        delay_us(1000000);
+
+		// ========Step 1 - check to see if enter was just pressed=====
+		// ======Step 2 - go through each option=========
+		// Cond 1 - see if the sequence is to create the user
+		if ((key=read_key()) == CREATE_USER)
+			new_user(users, &users_ptr);
+		// Cond 2 - see if the sequence is the login user
+		else if (key == LOGIN){
+            //When we're in login mode, if user_name is found then we move to password (return 0) 
+            //otherwise, we keep asking for the right username. (return 1) 
+			while(1){
+                if(login() == 0){
+                    break;
+                }
+            }
+        }
+
+		delay_us(500000);
+		Clear_LCD();
+
 	}
-	return '\0';
+
+
 }
+
+
+void init_user(){
+    memset(users[users_ptr].password, '\0',MAX_CHARS);
+    memset(users[users_ptr].username, '\0',MAX_CHARS);
+}
+
 
 // #TODO : login
 // Description: if log in then print to lcd "unlocked"
-///			  : else say not unlocked an exit
-void login(){
+///           : else say not unlocked an exit
+
+// #TODO : login
+// Description: if log in then print to lcd "unlocked"
+///           : else say not unlocked an exit
+int login(){
 	char *usr_na = NULL;
     char *pss_wd = NULL;
     int i = 0;
@@ -90,7 +172,7 @@ void login(){
     delay_us(1000000);
     next_line_pos();
     delay_us(1000000);
-    
+
     usr_na = read_key_until_enter();
     for (i=0 ; i < MAX_USERS ; i++){
         // see if there is user of that username in memory
@@ -99,7 +181,7 @@ void login(){
             break;
         }
     }
-    
+
     if (found){
         while(1){
             Write_string_LCD("LOCKED");
@@ -116,12 +198,13 @@ void login(){
             }
             Clear_LCD();
             delay_us(50000);
-            
+
+
             pss_wd = read_key_until_enter();
             delay_us(50000);
-            
+
             if(strcmp(pss_wd, users[i].password) == 0 ){
-                //psswd is the same as memory 
+                //psswd is the same as memory
                 //print unlocked;
                 free(usr_na);
                 free(pss_wd);
@@ -131,7 +214,6 @@ void login(){
                 delay_us(700000);
                 return 0;
             }
-            
             free(usr_na);
             free(pss_wd);
         }
@@ -140,64 +222,56 @@ void login(){
     }
 }
 
-
 #define QUIT "888"
 // #TODO - finish the new user fn
 void new_user(struct user *users, int *users_ptr){
-	char *user_key;
-	char *pass_key;
-	
+    char *user_key = NULL;
+    char *pass_key = NULL;
+    init_user();
+    Clear_LCD();
+    Write_string_LCD("Enter Username");
+    delay_us(1000000);
+    // Cond 1 - if the username_sequence at the base address is '\0' means user pressed enter
+    if (*(user_key = read_key_until_enter()) == '\0')
+        return;
 
-	Write_string_LCD("Enter Username");
-	// Cond 1 - if the username_sequence at the base address is '\0' means user pressed enter
-	if ((user_key = user_read_key_until_enter()) == '\0')
-		return;
-	}
+
+    Clear_LCD();
+    Write_string_LCD("Enter Password");
+    delay_us(1000000);
+    // Cond 2 - if the password_sequence at the base address is '\0' means user pressed enter
+    if (*(pass_key = read_key_until_enter()) == '\0')
+        return; // #TODO or return something that indicates that the struct is empty
+
+
+	char * ustruct_ptr = users[*users_ptr].username;
+	char * pstruct_ptr = users[*users_ptr].password;
+
+    cpy_chars(ustruct_ptr, user_key, strlen(user_key));
+    cpy_chars(pstruct_ptr, pass_key, strlen(pass_key));
+
+    if (user_key != NULL)
+        free(user_key);
+    if (pass_key != NULL)
+        free(pass_key);
+    *users_ptr += 1;
+
+
+}
+
+
+void cpy_chars(char *des, char *src, int size){
 	
-	Write_string_LCD("Enter Password");
-	// Cond 2 - if the password_sequence at the base address is '\0' means user pressed enter
-	if ((pass_key = user_read_key_until_enter()) == '\0'){
-		return; // #TODO or return something that indicates that the struct is empty
-	}
-	
-	memcpy(users[users_ptr].username, user_key);
-	memcpy(users[users_ptr].password, pass_key);
-	free(user_key);
-	free(pass_key);
-	*users_ptr += 1;
+	int i;
+	for (i=0; i < size; i++)
+		des[i] = src[i];
 
 }
 
 // #TODO : memset the counter_key to '\0'
 
-void main(void)
-{
 
-	// Var 1 - to make get sequence of char
-	char *sequence_key;	
-	Init_LCD();
-    Keypad_init();
-	// Go until MAX users are created
-	while (users_ptr < USER_MAX){	
 
-		Write_str_LCD("options 1- create user");
-		next_line_pos();
-		Write_str_LCD("option 2- login");
 
-		// ========Step 1 - check to see if enter was just pressed=====
-		sequence_key = user_read_key_until_enter();
-		// ======Step 2 - go through each option=========
-		// Cond 1 - see if the sequence is to create the user
-		}if (strcmp(sequence_key, CREATE_USER_SEQ) == 0){
-			new_user(users, &users_ptr);
-		// Cond 2 - see if the sequence is the login user
-		}else if(strcmp(sequence_key, LOGIN_SEQ) == 0){
-			login_user();
-		}		
-		delay_us(10000);
-		// Anything clears the sequence_key
-		free(sequence_key);
 
-	}
 
-}
