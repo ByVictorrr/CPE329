@@ -17,15 +17,10 @@ const signed char lookup_m[4][3] = {
             {'*', '0', '#'}
 };
 
-/* * - how to enter one of these sequences*/
-#define RESET_SEQ "69"
-#define CREATE_USER_SEQ "99"
-#define LOGIN_SEQ "11"
-#define EXIT_SEQ "66"
 
 
 //========READ until enter char fn=========
-#define ENTER_CHAR '*'
+#define ENTER_CHAR '#'
 #define MAX_CHARS 10
 //=======================================
 #define CREATE_USER (signed char)'1'
@@ -56,6 +51,7 @@ char isKeychar(int rows, int cols){
     int i, j;
     for (i = 0; i < rows; i++){
         for (j = 0; j < cols; j++){
+            key = read_key();
             if ( key == lookup_m[i][j]) // #TODO put lookup in header for Keypad.h
                 return key;
         }
@@ -89,10 +85,11 @@ char *read_key_until_enter(){
 /*    char *str;
     int str_ptr = 0;
     str = (char *)calloc(MAX_CHARS+1,sizeof(char));
+    Clear_LCD(100000);
     // Cond 1 - keep reading till you get passed the MAX chars
     while(str_ptr < MAX_CHARS){
         // ========Step 1 - check if the keypad is pushed=====
-        if ((str[str_ptr] = isKeychar(4,3)) != '\0' && str[str_ptr] != '*'){
+        if ((str[str_ptr] = isKeychar(4,3)) != '\0' && str[str_ptr] != ENTER_CHAR){
             Write_char_LCD(str[str_ptr]);
             str_ptr++;
         }else if (str[str_ptr] == ENTER_CHAR){
@@ -228,9 +225,11 @@ void new_user(struct user *users, int *users_ptr){
     char *user_key = NULL;
     char *pass_key = NULL;
     init_user();
+
     Clear_LCD();
     Write_string_LCD("Enter Username");
     delay_us(1000000);
+
     // Cond 1 - if the username_sequence at the base address is '\0' means user pressed enter
     if (*(user_key = read_key_until_enter()) == '\0')
         return;
