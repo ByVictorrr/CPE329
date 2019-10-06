@@ -2,12 +2,11 @@
 #include "LCD.h"
 #include "Keypad.h"
 /*P5 = cols*/
-const signed char lookup[4][3] = {
-            {'1','2','3'},
-            {'4','5','6'},
-            {'7','8', '9'},
-            {'*', '0', '#'}
-};
+
+
+
+
+
 void Keypad_init(){
     // Use P6 for rows and P5 for cols
     // Step 1 - init P5 as output port

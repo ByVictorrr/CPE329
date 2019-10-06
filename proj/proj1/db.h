@@ -1,74 +1,28 @@
-/*
- * db.h
- *
- *  Created on: Oct 4, 2019
- *      Author: victor
- */
-
 #ifndef DB_H_
 #define DB_H_
-
-
-#include "msp.h"
-#include "LCD.h"
-#include "delay.h"
-#include "Keypad.h"
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-
-#define MAX 1000
-#define MAX_USERS 10
-
-
-/* * - how to enter one of these sequences*/
-#define RESET_SEQ "69"
-#define CREATE_USER_SEQ "99"
-#define LOGIN_SEQ "11"
-#define EXIT_SEQ "66"
-#define QUIT "888"
-
-//========READ until enter char fn=========
-#define ENTER_CHAR '*'
+#define NULL 0
+#define ENTER_CHAR '#'
+#define EXIT_CHAR '*'
 #define MAX_CHARS 10
-//=======================================
+#define MAX_USERS 10
+#define CREATE_USER (signed char)'1'
+#define LOGIN (signed char)'2'
 
+// Struct of users with usernames and passwords
+static struct user{
+    char username[MAX_CHARS];
+    char password[MAX_CHARS];
+} users[MAX_USERS];
+static int users_ptr;
 
-struct user{
-    char username[MAX];
-    char password[MAX];
-};
-
-struct user users[MAX_USERS];
-int users_ptr = 0;
-
-
-
-
-
-// returns: 0 if read_key() isnt in lookup
-// returns: anything else 0f read_key()  is in lookup
-signed char isKeychar(int rows, int cols);
-
-/*Sequence to create a new user: ***  */
-/*Sequence to clear the old in key: **8   */
-
-
-// Description: general functions that takes user input until ENTER pressed
-char *read_key_until_enter();
+char isKeychar(int rows, int cols); //Return the key pressed on keypad
+char *read_key_until_enter();//Read keys until "#" is pressed
+int login();//Login interface, enter the correct username password combination to show UNLOCKED screen
+void new_user(struct user *users, int *users_ptr);// Create a new user/password combination to put in db
+void cpy_chars(char *des, char *src, int size);
+void init_user(); // initializes a new users password and username
+void cpy_chars(char *des, char *src, int size); // copys whatever is in src to des, size says how many element want to copy
 
 
 
-
-// #TODO : login
-// Description: if log in then print to lcd "unlocked"
-///           : else say not unlocked an exit
-
-// #TODO : login
-// Description: if log in then print to lcd "unlocked"
-///           : else say not unlocked an exit
-void login();
-
-// #TODO - finish the new user fn
-void new_user(struct user *users, int *users_ptr);
-#endif /* DB_H_ */
+#endif

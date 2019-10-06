@@ -3,7 +3,12 @@
 #include "msp.h"
 /*P5 = cols*/
 
-
+static const signed char lookup[4][3] = {
+            {'1','2','3'},
+            {'4','5','6'},
+            {'7','8', '9'},
+            {'*', '0', '#'}
+};
 
 #define COL1 BIT0
 #define COL2 BIT1
