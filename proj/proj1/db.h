@@ -9,10 +9,11 @@
 #define LOGIN (signed char)'2'
 
 // Struct of users with usernames and passwords
-static struct user{
+struct user{
     char username[MAX_CHARS];
     char password[MAX_CHARS];
 } users[MAX_USERS];
+
 static int users_ptr = 0;
 
 char isKeychar(int rows, int cols); //Return the key pressed on keypad
