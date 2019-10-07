@@ -1,4 +1,4 @@
-#include "db.h"
+#include "Gdb.h"
 #include "msp.h"
 #include "LCD.h"
 #include "delay.h"
@@ -9,7 +9,7 @@
 
 
 
-int users_ptr = 0;
+
 
 // returns: 0 if read_key() isnt in lookup
 // returns: anything else 0f read_key()  is in lookup
@@ -46,6 +46,12 @@ char *read_key_until_enter(){
             break;
         }
     }
+	// Cond statement that makes sure the 
+	if (str_ptr < 4){
+		Write_string_LCD("4 Digits!");
+		free(str);
+		return NULL;
+	}
     return str;
 }
 
@@ -74,7 +80,10 @@ int login(){
     next_line_pos();
     delay_us(400000);
 
-    usr_na = read_key_until_enter();
+	// less than 4 digits
+	if ((usr_na = read_key_until_enter()) == NULL){
+		return 1;
+	}
     for (i=0 ; i < MAX_USERS ; i++){
         // see if there is user of that username in memory
         if (strcmp (usr_na, users[i].username) == 0){
@@ -104,7 +113,12 @@ int login(){
             delay_us(400000);
 
 
-            pss_wd = read_key_until_enter();
+			// If less than four digits
+			if ((pss_wd = read_key_until_enter()) == NULL){
+				return 1;
+			}
+
+
             delay_us(10000);
 
             if(strcmp(pss_wd, users[i].password) == 0 ){
@@ -143,8 +157,8 @@ void new_user(struct user *users, int *users_ptr){
     Write_string_LCD("Enter Username");
     delay_us(500000);
 
-    // Cond 1 - if the username_sequence at the base address is '\0' means user pressed enter
-    if (*(user_key = read_key_until_enter()) == '\0')
+    // Cond 1 - if the username_sequence at the base address is '\0' means user pressed enter or if its less than four digits
+    if (*(user_key = read_key_until_enter()) == NULL | *user_key == '\0')
         return;
 
 
@@ -152,8 +166,8 @@ void new_user(struct user *users, int *users_ptr){
     delay_us(100000);
     Write_string_LCD("Enter Password");
     delay_us(500000);
-    // Cond 2 - if the password_sequence at the base address is '\0' means user pressed enter
-    if (*(pass_key = read_key_until_enter()) == '\0')
+    // Cond 2 - if the password_sequence at the base address is '\0' means user pressed enter or less than four digits
+    if (*(pass_key = read_key_until_enter()) == NULL | *pass_key == '\0') 
         return; // #TODO or return something that indicates that the struct is empty
 
 

@@ -13,7 +13,7 @@ static struct user{
     char username[MAX_CHARS];
     char password[MAX_CHARS];
 } users[MAX_USERS];
-static int users_ptr;
+static int users_ptr = 0;
 
 char isKeychar(int rows, int cols); //Return the key pressed on keypad
 char *read_key_until_enter();//Read keys until "#" is pressed
