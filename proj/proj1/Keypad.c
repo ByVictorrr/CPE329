@@ -59,10 +59,12 @@ signed char read_key(){
     if (col == 3 )
         return -1;
 
+    /*
     // cond 2 - if two btns pressed
     if (count_ones(rows, 4) > 1)
         return 0;
 
+    */
     // Step 2 - find what btn is pressed
     return lookup[get_row(rows, 4)][col];
 }
