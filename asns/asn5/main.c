@@ -3,24 +3,27 @@
 
 #define LED BIT0 // for port0
 #define CCR0 960
-#define CCRN 720
+#define CCRN 469
+//469
 enum PARTS{PART_A, PART_B};
 
 // Handler for CCR0
 void TA0_0_IRQHandler(void){
 	// Step 1 - toggle led
-	P5->OUT ^= ~LED;
+	P5->OUT = ~LED;
 	// Step 2 - add 960 cycles
 	TIMER_A0 -> CCR[0] += CCR0; // add .
-	//step 3 - turn off capture/compare interrupt flag
-	TIMER_A0 -> CCTL[0] &= ~TIMER_A_CCTLN_CCIFG; 
+	//step 3 - turn off capture/compare interrupt flag(to trigger again on rising edge)
+	TIMER_A0 -> CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
+
 }
 // Handler for CCR[1-6]
 void TA0_N_IRQHandler(void){
+
 	// Step 1 - toggle led
-	P5->OUT ^= LED;
-	// Step 2 - add 960 cycles
-	TIMER_A0 -> CCR[1] += CCRN; // add .
+	P5->OUT = LED;
+	// Step 2 - add 720 cycles
+	TIMER_A0 -> CCR[1] += CCR0; // add .
 	//step 3 - turn off capture/compare interrupt flag
 	TIMER_A0 -> CCTL[1] &= ~TIMER_A_CCTLN_CCIFG;
 }
@@ -29,8 +32,11 @@ void TA0_N_IRQHandler(void){
 void set_everything(int mode){
 	// step 0 - set up the GPIO
 	P5->DIR |= LED;
+	P5->SEL0 &= ~LED;
+	P5->SEL1 &= ~LED;
 
-    set_DCO(24); // 24Mhz
+
+    set_DCO(24.0); // 24Mhz
 
 	// Step 1 - set the inital cycles
 	TIMER_A0->CCR[1] = CCRN; //cycles
@@ -43,7 +49,7 @@ void set_everything(int mode){
 	TIMER_A0->CCTL[0] = TIMER_A_CCTLN_CCIE;
 
 	//Step 3 - Select Aclk and select up mode
-	TIMER_A0 -> CTL = TIMER_A_CTL_TASSEL_1 | TIMER_A_CTL_MC_2; // tassel - select clock src, mc - select up mode
+	TIMER_A0 -> CTL = TIMER_A_CTL_TASSEL_2 | TIMER_A_CTL_MC_2; // tassel - select clock src, mc - select up mode
 
 	// Step 4 = enable NVIC
 	NVIC->ISER[0] = (1 << (TA0_0_IRQn & 0x1F)); // for CCR0
