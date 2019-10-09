@@ -25,5 +25,4 @@ void init_user(); // initializes a new users password and username
 void cpy_chars(char *des, char *src, int size); // copys whatever is in src to des, size says how many element want to copy
 
 
-
 #endif
