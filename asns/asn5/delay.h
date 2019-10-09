@@ -14,7 +14,7 @@ struct slopef{
     int b;
     float prop;
 };
-
+void set_clk(char *clk_name);
 
 void set_DCO(float freq);
 struct slopef ret_freq_prop(uint32_t bits_extracted);

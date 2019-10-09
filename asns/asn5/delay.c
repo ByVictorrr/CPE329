@@ -6,8 +6,20 @@
  */
 #include "msp.h"
 #include "delay.h"
+#include <string.h>
 
+void set_clk(char *clk_name){
+    CS->KEY = CS_KEY_VAL;
+    if(strcmp(clk_name, "SMCLK") == 0){
+		// SELS = 3
+		CS->CTL1 |= CS_CTL1_SELS_3;// |  CS_CTL1_DIVS__1 ;
+	}else if(strcmp(clk_name, "MCLK") == 0){
+		// SELM = 3
+		CS->CTL1 |= CS_CTL1_SELM_3;// |  CS_CTL1_DIVM__1 ;
+	}
+    CS->KEY = ~CS_KEY_VAL;
 
+}
 
 
 void set_DCO(float freq){
