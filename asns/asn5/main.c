@@ -2,7 +2,7 @@
 #include "delay.h"
 
 #define LED BIT0 // for port0
-#define CCR0 480 // 960
+#define CCR0 1 // 960
 #define CCRN 720
 #define CCR0_PART B 480
 //469
@@ -39,8 +39,8 @@ void TA0_N_IRQHandler(void){
 void set_everything(int mode){
 	// step 0 - set up the GPIO
 	P4->DIR |= LED | BIT1;
-	P4->SEL0 &= ~LED | BIT1;
-	P4->SEL1 &= ~LED | BIT1;
+	P4->SEL0 &= ~LED & ~BIT1;
+	P4->SEL1 &= ~LED & ~BIT1;
 
 
 
@@ -81,8 +81,8 @@ void main(void)
      P4->SEL1&=~BIT3;
      P4->SEL0|=BIT3;
 
-    set_DCO(48); // 24Mhz
-    set_clk("SMCLK");
+    set_DCO(24.0); // 24Mhz
+    set_clk("MCLK");
     //set_clk("MCLK");
     set_everything(PART_B);
 
@@ -90,12 +90,13 @@ void main(void)
 
 
 
-
+/*
 	// set SMCLK  out
 	P7->DIR|=BIT0;
 	P7->SEL0|=BIT0;
 	P7->SEL1&=~BIT0;
 
+*/
 	while(1);
 
 
