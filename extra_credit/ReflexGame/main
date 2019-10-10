@@ -86,50 +86,26 @@ int over_fl = 0;
 int toggle = 0;
 int timer_int;
 
+void fn(){
+    if toggle == 0:
+            startTimer(&timer_int);
+            togger = 1;
 
-void PORT6_IRQHandler(void){
-    if (toggle == 0){
-        //startTimer(&timer_int);
-		/*start timer_a0 here*/
-		TIMER_A0 -> CTL |= TIMER_A_CTL_IE;
-		TIMER_A0 -> CTL = TIMER_A_CTL_TASSEL_2 | TIMER_A_CTL_MC_2; // tassel - select clock src, mc - select continuous mode
-		// do a TA CLR here 
-		TIMER_A0 -> CTL |= TIMER_A_CTL_CLR;	
-
-        toggle = 1;
-		TIMER_A0 -> R = 0;
-		TIMER_A0 ->CTL&=~TIMER_A_CTL_IFG;
-	    P6-> IFG &= ~(ROW1|ROW2|ROW3|ROW4);
-
-	}else{
-         //stopTimer(&timer_int);
-	    /*stop timer here */
-		int final_cycle_count =0;
-		int final_time = 0;
-		char buffer[30];
-		//(*((volatile uint16_t *)(0x40000010))))
-		final_cycle_count= TIMER_A0->R + (over_fl * 65535);
-		// clock = 24mhz -> 1s = 24 000 000 cycle
-		final_time = final_cycle_count/ (CLK_FREQ*10^6);
-		
-
-		itoa(final_time,buffer,10);
-		Clear_LCD();
-		Write_string_LCD("hi");
-
-		delay_us(2000000);
-		
-		//reset the IFG flag for the next time the user play ( buttons pressed);
-		over_fl = 0;
-		P6 -> IFG &= ~(ROW1|ROW2|ROW3|ROW4); // similar to TIMER_A0 -> CTL&= ~TIMER_A_CTL_IFG;
-		//turn off timer A0 here;
-
+    else:
+         stopTimer(&timer_int);
          toggle =0;
 
-		 // show time
-		 //
-	}
 }
+void PORT4_IRQHandler(void){
+    /*start timer_a0 here*/
+    TIMER_A0 -> CTL |= TIMER_A_CTL_IE;
+    TIMER_A0 -> CTL = TIMER_A_CTL_TASSEL_2 | TIMER_A_CTL_MC_2; // tassel - select clock src, mc - select continuous mode
+    // do a TA CLR here 
+    TIMER_A0 -> CTL |= TIMER_A_CTL_CLR;
+    
+    
+}
+
 //step 2: while waiting until USER b press button, maybe timer_a0 overflow
 //this handler will trigger ;
 
@@ -142,23 +118,59 @@ void TA0_N_IRQHandler(void){
 //for next run
 
 
+void PORT3_IRQHandler(void){
+
+    /*stop timer here */
+    int final_cycle_count =0;
+    int final_time = 0;
+    char buffer[30];
+    //(*((volatile uint16_t *)(0x40000010))))
+    final_cycle_count= TIMER_A0->R + (over_fl * 65535);
+    // clock = 24mhz -> 1s = 24 000 000 cycle
+    final_time = final_cycle_count/ (CLK_FREQ*10^6);
+    
+
+
+    Clear_LCD();
+    Write_string_LCD(itoa(final_time,buffer,10));
+
+    delay_us(2000000);
+    
+    //reset the IFG flag for the next time the user play ( buttons pressed);
+    over_fl = 0;
+    P4 -> IFG &= ~BIT0; // similar to TIMER_A0 -> CTL&= ~TIMER_A_CTL_IFG;
+    P3 -> IFG &= ~BIT0;
+    //turn off timer A0 here;
+}
+
+
+
+
 
 void set_everything(){
     
   //keypad init here 
- 
-    Keypad_init();
-    Init_LCD();
-
+  //
   //lcd init here 
     
 	// step 0 - set up the GPIO INput
+	P4->OUT&= ~BIT0;
+	P4->DIR |= BIT0;
+	P4->SEL0 &= ~BIT0;
+	P4->SEL1 &= ~BIT0;
+	//P4->REN = // XXX
 
+	P4-> IE |= BIT0;
+	P4-> IFG &= ~BIT0;
 
-	P6-> IE |= (ROW1|ROW2|ROW3|ROW4);
-	P6->IES = ~(ROW1|ROW2|ROW3|ROW4);
-	P6-> IFG &= ~(ROW1|ROW2|ROW3|ROW4);
-
+	// step 0 - set up the GPIO
+	P3->OUT&= ~BIT0;
+	P3->DIR |= BIT0; // setup p3 dir to be input
+	P3->SEL0 &= ~BIT0;
+	P3->SEL1 &= ~BIT0;
+    P3-> IE |= BIT0;
+    P3-> IFG &= ~BIT0;    
+    
     //now everytime you change P3->OUT manually, it actually sets P3 ->IFG high
     // 12.2.7 TRM page 680 said so 
     // do this in main i guess
@@ -180,12 +192,36 @@ void set_everything(){
 
 void main(void)
 {
+
+    Keypad_init();
+    Init_LCD();
+
     set_DCO(24.0); // 24Mhz
     set_clk("MCLK");
     set_everything();
 
     //do your button thing here;
-	while(1);
+	
+
+	
+
+	signed char key;
+	int counter=0;
+	int condition;
+	while(1){
+		condition = (key = read_key()) != 0 || key != -1;
+		if (condition && counter == 0){
+			P4->OUT = BIT0;
+			counter = 1;
+			//Write_char_LCD(key);
+			delay_us(10000);
+		}else if (condition && counter == 1){
+			P3->OUT = BIT0;
+			counter = 0;
+			//Write_char_LCD(key);
+			delay_us(10000);
+		}
+	}
 
 
 }
