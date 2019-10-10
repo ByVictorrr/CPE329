@@ -6,7 +6,12 @@ int now;
 
 void PORT6_IRQHandler(){
 	//Step 1 - toggle a timer
-	TIMER_A0 -> CCR
+	now = TIMER_A0 -> TA0R;
+
+	Write_string_LCD();
+
+	prev = TIMER_A0 -> TA0R;
+
 
 }
 /**
@@ -21,6 +26,7 @@ void main(void)
 	__enable_irq();
 
 	while (1){
+	    // step -1  - see if RC overflow if so add now+=0xFFFF
 		// step 0 - press btn
 		if (read_key() != '\0'){
 			// that means a btn is pressed
