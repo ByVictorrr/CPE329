@@ -170,7 +170,7 @@ void set_everything(){
 
     NVIC->ISER[0] = (1 << (TA0_N_IRQn & 0x1F)); // for TAIFG
     NVIC->ISER[0] = (1 << (PORT4_IRQn & 0x1F)); // for port 1
-    NVIC->ISER[0] = (1 << (PORT3_IRQn & 0x1F)); // for port 3
+
 
 	// Step 5 - enable globally
 	__enable_irq();
