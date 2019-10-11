@@ -77,7 +77,7 @@ void set_everything(){
     P3-> IE |= BIT 0;
     P3-> IFG &= ~BIT0;    
     
-    //now everytime you change P3->OUT manually, it actually sets P3 ->IV high
+    //now everytime you change P3->OUT manually, it actually sets P3 ->IFG high
     // 12.2.7 TRM page 680 said so 
     // do this in main i guess
     //if button 1 is pressed p1-> bit 0 high which trigger interupt  
