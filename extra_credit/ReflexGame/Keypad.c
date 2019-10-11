@@ -19,9 +19,9 @@ void Keypad_init(){
     P6->OUT &= ~(ROW1 | ROW2 | ROW3 | ROW4); // pull down
 
     // Step 3 - enable interupts
-    P6->IE |= (ROW1 | ROW2 | ROW3 | ROW4); // pull down
+    //P6->IE |= (ROW1 | ROW2 | ROW3 | ROW4); // pull down
     // Step 4 - interrupt on rising edge
-    P6->IES |=(ROW1 | ROW2 | ROW3 | ROW4);
+    //P6->IES |=(ROW1 | ROW2 | ROW3 | ROW4);
 
 }
 

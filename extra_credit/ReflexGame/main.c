@@ -115,6 +115,7 @@ void PORT6_IRQHandler(void){
 
 		itoa(final_time,buffer,10);
 		Clear_LCD();
+		delay_us(1000000);
 		Write_string_LCD("hi");
 
 		delay_us(2000000);
@@ -156,20 +157,15 @@ void set_everything(){
 
 
 	P6-> IE |= (ROW1|ROW2|ROW3|ROW4);
-	P6->IES = ~(ROW1|ROW2|ROW3|ROW4);
+	P6->IES &= ~(ROW1|ROW2|ROW3|ROW4);
 	P6-> IFG &= ~(ROW1|ROW2|ROW3|ROW4);
 
-    //now everytime you change P3->OUT manually, it actually sets P3 ->IFG high
-    // 12.2.7 TRM page 680 said so 
-    // do this in main i guess
-    //if button 1 is pressed P4-> bit 0 high which trigger interupt
-    //if button 3 is pressed p3-> bit 0 out high 
     
 
 	// Step 4 = enable NVIC
 
     NVIC->ISER[0] = (1 << (TA0_N_IRQn & 0x1F)); // for TAIFG
-    NVIC->ISER[0] = (1 << (PORT4_IRQn & 0x1F)); // for port 1
+    NVIC->ISER[0] = (1 << (PORT6_IRQn & 0x1F)); // for port 1
 
 
 	// Step 5 - enable globally
@@ -185,6 +181,7 @@ void main(void)
     set_everything();
 
     //do your button thing here;
+    Write_char_LCD(read_key());
 	while(1);
 
 
