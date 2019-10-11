@@ -16,7 +16,7 @@ void PORT1_IRQHandler(void){
     
     /*start timer_a0 here*/
     TIMER_A0 -> CTL |= TIMER_A_CTL_IE;
-    TIMER_A0 -> CTL = TIMER_A_CTL_TASSEL_2 | TIMER_A_CTL_MC_2; // tassel - select clock src, mc - select up mode
+    TIMER_A0 -> CTL = TIMER_A_CTL_TASSEL_2 | TIMER_A_CTL_MC_2; // tassel - select clock src, mc - select continuous mode
     // do a TA CLR here 
     
     
