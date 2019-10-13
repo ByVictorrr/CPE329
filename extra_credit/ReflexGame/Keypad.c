@@ -16,7 +16,7 @@ void Keypad_init(){
     // Step 2 - inti the inputs
     P6->DIR &= ~(ROW1 | ROW2 | ROW3 | ROW4); // row inputs
     P6->REN |= (ROW1 | ROW2 | ROW3 | ROW4); // enable resistor
-    P6->OUT &= ~(ROW1 | ROW2 | ROW3 | ROW4); // pull down
+    P6->OUT |= (ROW1 | ROW2 | ROW3 | ROW4); // pull down
 
     // Step 3 - enable interupts
     //P6->IE |= (ROW1 | ROW2 | ROW3 | ROW4); // pull down

@@ -99,7 +99,8 @@ void PORT6_IRQHandler(void){
         toggle = 1;
 		TIMER_A0 -> R = 0;
 		TIMER_A0 ->CTL&=~TIMER_A_CTL_IFG;
-	    P6-> IFG &= ~(ROW1|ROW2|ROW3|ROW4);
+	    P6-> IFG &= ~ROW1;
+
 
 	}else{
          //stopTimer(&timer_int);
@@ -116,13 +117,13 @@ void PORT6_IRQHandler(void){
 		itoa(final_time,buffer,10);
 		Clear_LCD();
 		delay_us(1000000);
-		Write_string_LCD("hi");
+		//Write_string_LCD("hi");
 
 		delay_us(2000000);
 		
 		//reset the IFG flag for the next time the user play ( buttons pressed);
 		over_fl = 0;
-		P6 -> IFG &= ~(ROW1|ROW2|ROW3|ROW4); // similar to TIMER_A0 -> CTL&= ~TIMER_A_CTL_IFG;
+		P6 -> IFG &= ~(ROW1); // similar to TIMER_A0 -> CTL&= ~TIMER_A_CTL_IFG;
 		//turn off timer A0 here;
 
          toggle =0;
@@ -148,25 +149,23 @@ void set_everything(){
     
   //keypad init here 
  
-    Keypad_init();
     Init_LCD();
+	// Step 0 - enable row 1
+    P5->DIR |= (COL1);
+    P5->OUT = COL1;
 
-  //lcd init here 
-    
-	// step 0 - set up the GPIO INput
+	P6->IES &= ~(ROW1);
+	P6-> IFG &= ~(ROW1);
+	P6-> IE |= (ROW1);
 
-
-	P6-> IE |= (ROW1|ROW2|ROW3|ROW4);
-	P6->IES &= ~(ROW1|ROW2|ROW3|ROW4);
-	P6-> IFG &= ~(ROW1|ROW2|ROW3|ROW4);
-
-    
+    // Step 2 - inti the inputs
+    P6->DIR &= ~(ROW1); // row inputs
+    P6->REN |= (ROW1); // enable resistor
+    P6->OUT |= (ROW1);	// pull down
 
 	// Step 4 = enable NVIC
-
     NVIC->ISER[0] = (1 << (TA0_N_IRQn & 0x1F)); // for TAIFG
-    NVIC->ISER[0] = (1 << (PORT6_IRQn & 0x1F)); // for port 1
-
+    NVIC->ISER[1] = (1 << (PORT6_IRQn & 0x1F)); // for port 1
 
 	// Step 5 - enable globally
 	__enable_irq();
@@ -176,12 +175,14 @@ void set_everything(){
 
 void main(void)
 {
+    Clear_LCD();
+    delay_us(100000);
+    Home_LCD();
     set_DCO(24.0); // 24Mhz
     set_clk("MCLK");
     set_everything();
 
     //do your button thing here;
-    Write_char_LCD(read_key());
 	while(1);
 
 
