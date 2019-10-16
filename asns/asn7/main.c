@@ -6,6 +6,7 @@
 #define _CS BIT7
 
 
+// working for 1-4
 
 #define _BIT(x) (uint16_t)(1 << x)
 
@@ -20,7 +21,7 @@ void init_SPI(){
     // Step 1 - put in rst state
     EUSCI_B0 -> CTLW0 |= EUSCI_B_CTLW0_SWRST;
     // Step 2 - set as master of bus, synchronous mode and select smclk
-    EUSCI_B0 -> CTLW0 |= EUSCI_B_CTLW0_SWRST|EUSCI_B_CTLW0_CKPL
+    EUSCI_B0 -> CTLW0 |= EUSCI_B_CTLW0_SWRST|EUSCI_B_CTLW0_CKPL | EUSCI_B_CTLW0_CKPH
             |EUSCI_B_CTLW0_MSB |EUSCI_B_CTLW0_MST
             |EUSCI_B_CTLW0_SYNC |EUSCI_B_CTLW0_UCSSEL_2;
     EUSCI_B0 -> BRW = 0x01; // run full smclk speed
@@ -36,7 +37,7 @@ void init_SPI(){
     //NVIC->ISER[0] = (1 << EUSCIB_IRQn); // enable on lookup table
     //__enable_irq(); // enable globals
     // Step 6 - mode 0,0
-    EUSCI_B0 -> CTLW0 &= ~(EUSCI_B_CTLW0_CKPH | EUSCI_B_CTLW0_CKPL);
+   // EUSCI_B0 -> CTLW0 &= ~(EUSCI_B_CTLW0_CKPH | EUSCI_B_CTLW0_CKPL);
 }
 /**
  * main.c
@@ -45,7 +46,7 @@ void init_SPI(){
 
 void send_to_DAC(uint16_t out_voh){
     // Step 0 - sep bytes
-    uint8_t loByte = out_voh & 0xFF, highByte = (out_voh >> 8) & 0x0F;
+    uint8_t loByte = out_voh & 0xFF, highByte = (out_voh >> 8) & 0xFF;
     // Step 1 - set up _CS
     P1->OUT &= ~_CS;
 
@@ -70,10 +71,10 @@ void main(void)
 {
     P1->DIR |= _CS;
     set_clk("SMCLK");
-    //set_DCO(12);
+    set_DCO(1.5);
     // Step 1 - init SPI
     init_SPI();
-    uint16_t data[2] = { GAIN | SHDN | 0x1FFF, GAIN|SHDN| 0x0012};
+    uint16_t data[3] = { GAIN | SHDN | 0x0FFF, GAIN|SHDN| 0x0012, GAIN|SHDN | 0x1000};
     int i=0;
     // Step 2 - send data
     //while(1){
@@ -84,6 +85,7 @@ void main(void)
 
         //while(1)
             send_to_DAC(data[0]);
+            while(1);
     //}
 
 }
