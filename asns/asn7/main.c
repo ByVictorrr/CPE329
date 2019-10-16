@@ -13,43 +13,77 @@
 #define GAIN (uint16_t)BIT(13)
 #define SHDN (uint16_t)BIT(12)
 
-#define CCR0 15000
+#define CCR0 6000
+#define CCRN 12000
 
 
 
-typedef enum {LOW, HIGH} state_t;
+typedef enum {ZERO ,ONE_UP, TWO, ONE_DOWN} state_t;
+#define TWO_VOLTS 0x0FF3 | GAIN | SHDN
+#define ONE_VOLTS 0x0FE9 | GAIN | SHDN
+#define ZERO_VOLTS 0x0FDF | GAIN | SHDN
 
-state_t flag;
+
+struct counter_field{
+    uint8_t counter:2; // allocate 2 bits
+    //will overflow and reset to 0
+} two_bit_counter;
+
+
 // Handler for CCR0
 void TA0_0_IRQHandler(void){
     P1->OUT=BIT0;
     delay_us(100000);
 	// Step 1 - send data representing ones(use a flag)
-	flag = flag == HIGH? LOW : HIGH; //unary expression
+	two_bit_counter.counter += 1;
 	//step 3 - turn off capture/compare interrupt flag(to trigger again on rising edge)
 	TIMER_A0 -> CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
 	// Step 2 - add 960 cycles
-	TIMER_A0 -> CCR[0] = CCR0; // up mode just set it equal to it self
+	TIMER_A0 -> CCR[0] += CCR0; // up mode just set it equal to it self
 	P1->OUT=~BIT0;
 }
 
+// Handler for CCR[1-6]
+void TA0_N_IRQHandler(void){
+
+
+    // Step 1 - toggle led
+    P4->OUT ^= BIT1;
+    two_bit_counter.counter += 1;
+    //step 3 - turn off capture/compare interrupt flag
+    TIMER_A0 -> CCTL[1] &= ~TIMER_A_CCTLN_CCIFG;
+    // Step 2 - add ccrn
+    TIMER_A0 -> CCR[1] += CCRN; // add .
+
+}
+
+
 void set_everything(){
+    // step 0 - set up the GPIO
+    P4->DIR |= BIT0 | BIT1;
+    P4->SEL0 &= ~BIT0 & BIT1;
+    P4->SEL1 &= ~BIT0 & ~BIT1;
+    P4->OUT&=~BIT0;
 
-    P1->DIR|= BIT0;
-	// step 0 - set up the GPIO
-	// Step 1 - set the inital cycles
-	TIMER_A0->CCR[0] = CCR0; // cycles
-	//step 2 - control regs - enable interrupts , and compare mode
-	TIMER_A0->CCTL[0] = TIMER_A_CCTLN_CCIE;
+    // Step 1 - set the inital cycles
+    TIMER_A0->CCR[1] = CCRN; //cycles
+    TIMER_A0->CCR[0] = CCR0; // cycles
+    // XXX : review below
+    //step 2 - control regs - enable interrupts , and compare mode
+    TIMER_A0->CCTL[1] = TIMER_A_CCTLN_CCIE;
 
-	//Step 3 - Select MCLK and select up mode
-	TIMER_A0 -> CTL = TIMER_A_CTL_TASSEL_2 | TIMER_A_CTL_MC_1; // tassel - select clock src, mc - select up mode
+    TIMER_A0->CCTL[0] = TIMER_A_CCTLN_CCIE;
 
-	// Step 4 = enable NVIC
-	NVIC->ISER[0] = (1 << (TA0_0_IRQn & 0x1F)); // for CCR0
+    //Step 3 - Select MCLK and select up mode
+    TIMER_A0 -> CTL = TIMER_A_CTL_TASSEL_2 | TIMER_A_CTL_MC_2; // tassel - select clock src, mc - select continuious mode
 
-	// Step 5 - enable globally
-	__enable_irq();
+    // Step 4 = enable NVIC
+    NVIC->ISER[0] = (1 << (TA0_0_IRQn & 0x1F)); // for CCR0
+
+    NVIC->ISER[0] = (1 << (TA0_N_IRQn & 0x1F)); // for other CCRs
+
+    // Step 5 - enable globally
+    __enable_irq();
 
 
 }
@@ -132,25 +166,33 @@ void main(void)
     set_DCO(1.5);
     // Step 1 - init SPI
     init_SPI();
-    uint16_t data = 0x0FF3 | GAIN | SHDN;
-    flag = LOW;
+    uint16_t data = 0x0FE9 | GAIN | SHDN;
+    //flag = LOW;
 
 
 
 	set_everything();
 
         while(1){
-            switch(flag){
-            case HIGH:
-                data = 0x0FF3 | GAIN | SHDN;
-                break;
-            case LOW:
-                data = 0x0FDF | GAIN | SHDN;
-                break;
-            }
+
+                       // Triangle
+                       switch(two_bit_counter.counter){
+                       case ZERO:
+                           data = ZERO_VOLTS;
+                           break;
+                       case ONE_UP:
+                           data = ONE_VOLTS;
+                           break;
+                       case TWO:
+                           data = TWO_VOLTS;
+                           break;
+                       case ONE_DOWN:
+                           data = ONE_VOLTS;
+                           break;
+
+                       }
+
             send_to_DAC(data);
         }
-        //    while(1);
-    //}
 
 }
