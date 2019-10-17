@@ -6,6 +6,7 @@
 #define SIMO BIT6
 #define _CS BIT7
 
+// LOOK AT ME !!!! : I think the data isnt having enough time to send the data before the next interupt check that!
 
 // working for 1-4
 
