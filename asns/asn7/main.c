@@ -14,51 +14,32 @@
 #define GAIN (uint16_t)BIT(13)
 #define SHDN (uint16_t)BIT(12)
 
-#define CCR0 6000
-#define CCRN 12000
+
+
+#define LEN 19
+#define F_INPUT 1.5
+#define T_OUTPUT 20
+#define K 1000 //  rep kila
+#define CCR0  (uint16_t)(F_INPUT * T_OUTPUT * K)/LEN
 
 
 
-typedef enum {ZERO ,ONE_UP, TWO, ONE_DOWN} state_t;
-#define TWO_VOLTS 0x0FF3 | GAIN | SHDN
-#define ONE_VOLTS 0x0FE9 | GAIN | SHDN
-#define ZERO_VOLTS 0x0FDF | GAIN | SHDN
 
-
-struct counter_field{
-    uint8_t counter:2; // allocate 2 bits
-    //will overflow and reset to 0
-} two_bit_counter;
-
+int counter;
 
 // Handler for CCR0
 void TA0_0_IRQHandler(void){
+
+	// Step 0 - for debuging
     P1->OUT=BIT0;
-    delay_us(10000);
-	// Step 1 - send data representing ones(use a flag)
-	two_bit_counter.counter += 1;
+	// Step 1 - check if  counter over 21 if so reset it to zero else set it to itself + 1
+	counter = counter >= LEN - 1 ? 0 : counter+1;
 	//step 3 - turn off capture/compare interrupt flag(to trigger again on rising edge)
 	TIMER_A0 -> CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
 	// Step 2 - add 960 cycles
-	TIMER_A0 -> CCR[0] += CCR0; // up mode just set it equal to it self
+	TIMER_A0 -> CCR[0] = CCR0; // up mode just set it equal to it self
 	P1->OUT=~BIT0;
 }
-
-// Handler for CCR[1-6]
-void TA0_N_IRQHandler(void){
-
-
-    //delay_us(1000);
-    // Step 1 - toggle led
-    P4->OUT ^= BIT1;
-    two_bit_counter.counter += 1;
-    //step 3 - turn off capture/compare interrupt flag
-    TIMER_A0 -> CCTL[1] &= ~TIMER_A_CCTLN_CCIFG;
-    // Step 2 - add ccrn
-    TIMER_A0 -> CCR[1] += CCRN; // add .
-
-}
-
 
 void set_everything(){
     // step 0 - set up the GPIO
@@ -68,21 +49,17 @@ void set_everything(){
     P4->OUT&=~BIT0;
 
     // Step 1 - set the inital cycles
-    TIMER_A0->CCR[1] = CCRN; //cycles
     TIMER_A0->CCR[0] = CCR0; // cycles
     // XXX : review below
     //step 2 - control regs - enable interrupts , and compare mode
-    TIMER_A0->CCTL[1] = TIMER_A_CCTLN_CCIE;
 
     TIMER_A0->CCTL[0] = TIMER_A_CCTLN_CCIE;
 
     //Step 3 - Select MCLK and select up mode
-    TIMER_A0 -> CTL = TIMER_A_CTL_TASSEL_2 | TIMER_A_CTL_MC_2; // tassel - select clock src, mc - select continuious mode
+    TIMER_A0 -> CTL = TIMER_A_CTL_TASSEL_2 | TIMER_A_CTL_MC_1; // tassel - select clock src, mc - select continuious mode
 
     // Step 4 = enable NVIC
     NVIC->ISER[0] = (1 << (TA0_0_IRQn & 0x1F)); // for CCR0
-
-    NVIC->ISER[0] = (1 << (TA0_N_IRQn & 0x1F)); // for other CCRs
 
     // Step 5 - enable globally
     __enable_irq();
@@ -165,38 +142,15 @@ void main(void)
 {
     P1->DIR |= _CS;
     set_clk("SMCLK");
-    set_DCO(1.5);
+    set_DCO(F_INPUT);
     // Step 1 - init SPI
     init_SPI();
-    uint16_t data = 0xFFF  | GAIN | SHDN;
-    //flag = LOW;
-
-
-
 	set_everything();
+	// For triangle wave
+	float voltages[LEN] = {0, .1, .3, .5, .7, .9, 1.1, 1.3, 1.5, 1.7, 1.9, 1.7, 1.5, 1.3, 1.1, .9, .7, .5,.3};
 
-        while(1){
-            /*
-
-                       // Triangle
-                       switch(two_bit_counter.counter){
-                       case ZERO:
-                           data = ZERO_VOLTS;
-                           break;
-                       case ONE_UP:
-                           data = ONE_VOLTS;
-                           break;
-                       case TWO:
-                           data = TWO_VOLTS;
-                           break;
-                       case ONE_DOWN:
-                           data = ONE_VOLTS;
-                           break;
-
-                       }
-            */
-
-            send_to_DAC(voltage_to_dacData(1));
-        }
+	while(1){
+		send_to_DAC(voltage_to_dacData(voltages[counter]));
+	}
 
 }
