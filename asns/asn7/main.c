@@ -34,7 +34,7 @@ struct counter_field{
 // Handler for CCR0
 void TA0_0_IRQHandler(void){
     P1->OUT=BIT0;
-    delay_us(100000);
+    delay_us(10000);
 	// Step 1 - send data representing ones(use a flag)
 	two_bit_counter.counter += 1;
 	//step 3 - turn off capture/compare interrupt flag(to trigger again on rising edge)
@@ -48,6 +48,7 @@ void TA0_0_IRQHandler(void){
 void TA0_N_IRQHandler(void){
 
 
+    //delay_us(1000);
     // Step 1 - toggle led
     P4->OUT ^= BIT1;
     two_bit_counter.counter += 1;
@@ -148,8 +149,8 @@ void send_to_DAC(uint16_t out_voh){
 // returns -1 on error
 uint16_t voltage_to_dacData(float volts){
 	
-	float slope = 2774.4230;
-	int b =-4783;
+	float slope =9.69;
+	int b =4063;
 	uint16_t data;
 	// data = slope * (volts) + b	
 	if (volts >= 0 && volts<=3.3)
@@ -167,7 +168,7 @@ void main(void)
     set_DCO(1.5);
     // Step 1 - init SPI
     init_SPI();
-    uint16_t data = 0x0FE9 | GAIN | SHDN;
+    uint16_t data = 0xFFF  | GAIN | SHDN;
     //flag = LOW;
 
 
@@ -175,6 +176,7 @@ void main(void)
 	set_everything();
 
         while(1){
+            /*
 
                        // Triangle
                        switch(two_bit_counter.counter){
@@ -192,8 +194,9 @@ void main(void)
                            break;
 
                        }
+            */
 
-            send_to_DAC(data);
+            send_to_DAC(voltage_to_dacData(1));
         }
 
 }
