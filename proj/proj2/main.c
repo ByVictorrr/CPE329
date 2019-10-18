@@ -1,34 +1,36 @@
 #include "msp.h"
 #include "Keypad.h"
 #include "LCD.h"
-#include "db.h"
+#include "delay.h"
+#include "DAC.h"
+#include <string.h>
 
 
 
-
-typedef enum {FALSE, TRUE} bool
-
-
-
+/*
 #define SAWTOOTH 9
 #define SQUARE 7
 #define SINE 8
+*/
+
+#define SQUARE '7'
+#define SAW '9'
+#define SINE '8'
+
+#define SELECT_WAVE "789" // range
+#define SELECT_FREQ "12345" // range
+#define SELECT_DUTYCYCLE "#0*"
 
 // length of array holding values for saw wave
 #define LEN_SAW 11 
 #define LEN_SINE 17
 #define LEN_SQUARE 2
 
-#define F_INPUT 1500000 // 1.5 Mhz
+//#define F_INPUT 1500000 // 1.5 Mhz
 
-float saw_voltages[LEN_SAW] = { 0, .1, .3, .5, .7, .9, 1.1, 1.3, 1.5, 1.7, 1.9};
-
-float sine_voltages[LEN_SINE] = { sin(2*0), sin(2*.1), sin(2*.3), sin(2*.5), sin(2*.7), 
-								sin(2*.9), sin(2*1.1), sin(2*1.3), sin(2*1.5), sin(2*1.7), 
-								sin(2*1.9), sin(2*2.1), sin(2*2.3), sin(2*2.5), sin(2*2.7), sin(2*2.9), sin(2*3.14)};
-
-float square_voltages[LEN_SQUARE] = {0, 2};
-
+float saw_voltages[LEN_SAW];
+float sine_voltages[LEN_SINE];
+float square_voltages[LEN_SQUARE];
 struct data wave_data;
 
 // global for all functions
@@ -50,175 +52,92 @@ void TA0_0_IRQHandler(void){
 	// step 2 - turn off the timers flag
 	TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
 	// step 3 - set ccr0
-	TIMER_A0->CCR[0] = wave_data.crr0;
+	TIMER_A0->CCR[0] = wave_data.ccr0;
 }
 
 
-void send_to_DAC(uint16_t out_voh){
-    // Step 0 - sep bytes
-    uint8_t loByte = out_voh & 0xFF, highByte = ((out_voh >> 8) & 0xFF) ;
-    // Step 1 - set up _CS
-    P1->OUT &= ~_CS;
 
-    // Step 2 - send the high byte first(put high byte in buffer)
-    EUSCI_B0 ->TXBUF = highByte;
-    // Step 3 - wait for Tx flag when tx buffer empty
-    while(!(EUSCI_B0 ->IFG & EUSCI_B_IFG_TXIFG));
-    // Step 3.1 put more data in the buffer
-    EUSCI_B0 ->TXBUF = loByte;
-    // Step 4 - clear the rx flag before using
-    //EUSCI_B0 ->IFG &= ~EUSCI_B_IFG_RXIFG;
-    // Step 5 - use  the recieve flag to indicate when we sent the first 8 bits
-    while(!(EUSCI_B0 ->IFG & EUSCI_B_IFG_RXIFG));
-    // Step 6 - after transmitting
-    P1->OUT |= _CS;
+struct data sawtooth(int freq){
 
-}
-
-// returns a uint16 (12bits) - representing the voltage level
-// returns -1 on error
-uint16_t voltage_to_dacData(float volts){
-    float slope =9.69;
-    int b =4063;
-    uint16_t data;
-    // data = slope * (volts) + b
-    if (volts >= 0 && volts<=3.3)
-        data = slope*volts+b;
-
-    return abs(GAIN | SHDN | data);
-}
-
-void init_Timer(){
-
-    // Step 1 - set the inital cycles
-    TIMER_A0->CCR[0] = CCR0; // cycles
-    // XXX : review below
-    //step 2 - control regs - enable interrupts , and compare mode
-
-    TIMER_A0->CCTL[0] = TIMER_A_CCTLN_CCIE;
-
-    //Step 3 - Select MCLK and select up mode
-    TIMER_A0 -> CTL = TIMER_A_CTL_TASSEL_2 | TIMER_A_CTL_MC_1; // tassel - select clock src, mc - select continuious mode
-
-    // Step 4 = enable NVIC
-    NVIC->ISER[0] = (1 << (TA0_0_IRQn & 0x1F)); // for CCR0
-
-    // Step 5 - enable globally
-    __enable_irq();
-
-
-}
-
-
-void init_SPI(){
-    // Step 1 - put in rst state
-    EUSCI_B0 -> CTLW0 |= EUSCI_B_CTLW0_SWRST;
-    // Step 2 - set as master of bus, synchronous mode and select smclk
-    EUSCI_B0 -> CTLW0 |= EUSCI_B_CTLW0_SWRST
-            |EUSCI_B_CTLW0_MSB |EUSCI_B_CTLW0_MST
-            |EUSCI_B_CTLW0_SYNC |EUSCI_B_CTLW0_UCSSEL_2;
-    EUSCI_B0 -> CTLW0 &=~(EUSCI_B_CTLW0_CKPL | EUSCI_B_CTLW0_CKPH);
-    EUSCI_B0 -> BRW = 0x01; // run full smclk speed
-    // Step 3 - select simo, somi and sclk
-    P1->SEL0 |= (SCLK | SIMO);
-    P1->SEL1 &= ~(SCLK | SIMO);
-    // Step 4 - clears software rst
-    EUSCI_B0 -> CTLW0 &= ~EUSCI_B_CTLW0_SWRST;
-}
-float getDutyCycle(){
-	char *dc;
-	float _dc;
-	Clear_LCD();
-	delay_us(100000);
-	Write_string_LCD("Enter Duty Cycle")
-	delay_us(500000);
-
-	//cond 1 - if not a valid input then return
-	if (*(dc == read_key_until_enter() == NULL)){
-		return;
-	}
-
-	_dc = atoi(dc);
-	
-	free(dc);
-	return _dc;
-}
-float getFreq(){
-	char *freq;
-	float _freq;
-	Clear_LCD();
-	delay_us(100000);
-	Write_string_LCD("Enter Frequency");
-	delay_us(500000);
-	Write_string_LCD("1-100Hz, ... , 5-500Hz");
-
-	//cond 1 - if not a valid input then return
-	if (*(freq == read_key_until_enter() == NULL)){
-		return;
-	}
-	_freq = atoi(freq);
-	
-	free(freq);
-	return _freq;
-}
-
-
-struct data sawtooth(){
-	// step 1 - get the freq
-	float freq = getFreq();
-	// step 2 - get ccr0 needed for the freq
 	ccr0 = F_INPUT/(LEN_SAW*freq);
-	data = saw_voltages;
 
 	return (struct data){saw_voltages, ccr0, 0, LEN_SAW-1};
 }
-struct data square(){
-	// step 1 - get the freq
-	float freq = getFreq();
-	// step 2 - get the dc
-	float dutyCycle = getDutyCycle();
+struct data square(int freq){
+
 	// step 3 - get ccr0 needed for the freq
 	ccr0 = F_INPUT/(2*freq);
 	// use 
-	data = square_voltages;
 
 	return (struct data){square_voltages, ccr0 ,0, LEN_SQUARE-1};
 }
 
-struct data sinusoid(){
-	// step 1 - get the freq
-	float freq = getFreq();
+struct data sinusoid(int freq){
 	
 	// use sin(2x-pi/2)+1 to model this
 	// step 2 - get ccr0 needed for the freq
 	ccr0 = F_INPUT/(LEN_SINE*freq);
 	
 	// step 3 - send data to the dac
-	data = sine_voltages; // use this reference in the send data
 	
-	return (struct data){sinusoid_voltages, ccr0, 0, LEN_SINE-1};
+
+	return (struct data){sine_voltages, ccr0, 0, LEN_SINE-1};
 }
 
 /**
  * main.c
  */
+
+
+
+#define 100HZ '1'
+#define 200HZ '2'
+#define 300HZ '3'
+#define 400HZ '4'
+#define 500HZ '5'
+
 void main(void)
 {
 
 	int key;
-	while(1){
+	int freq =  100, dutyC = 50;
+	char wave_type = SQUARE;
 
-		Write_string_LCD("7-square; 8-sine");
+	// step 1 - init everything
+	init_TimerA();
+	init_SPI();
+
+	// step 2 - set the data arrays for pts
+	gen_arrays(square_voltages, LEN_SQUARE, 1 , FALSE, NULL); // square wave
+	gen_arrays(sine_voltages, LEN_SQUARE, .1 , TRUE, cos); // sine wave XXX (Configure step size and LEN)
+	gen_arrays(saw_voltages, LEN_SQUARE, .1 , TRUE, cos); // sine wave XXX (Configure step size and LEN)
+
+
+
+	while(1){
+		Write_string_LCD("(1-5): change freq, (7-9): change wave");
 		next_line_pos();
 		delay_us(1000);
-		Write_string_LCD("9-sawtooth");
-		if ((key == read_key()) == SAWTOOTH){
-			wave_data = sawtooth();
-		}else if (key == SQUARE){
-			wave_data = square();
-		}else if (key == SINE){
-			wave_data = sinusoid();
+		Write_string_LCD("(*,0,#): change duty cycle");
+
+		// State 1 - select wave
+		if (strstr(SELECT_WAVE, key=read_key()) != NULL){
+	        if ((wave_type = key) == SAW){
+	            wave_data = sawtooth(freq);
+	        }else if (wave_type == SQUARE){
+	            wave_data = square(freq);
+	        }else if (wave_type == SINE){
+	            wave_data = sinusoid(freq);
+	        }
+	    // state 2 - select freq
+		}else if (strstr(SELECT_FREQ, key) != NULL){
+			freq = (key + '0')*100;
+		// state 3 - select dc
+		}else if (strstr(SELECT_DUTYCYCLE, key) != NULL){
+			// XXX todo 
 		}
+
+
 	send_to_DAC(voltage_to_dacData(wave_data.ptr[wave_data.i]));
 	Clear_LCD();
 	delay_us(1000);
