@@ -53,6 +53,45 @@ void TA0_0_IRQHandler(void){
 	TIMER_A0->CCR[0] = wave_data.crr0;
 }
 
+
+
+void init_Timer(){
+
+    // Step 1 - set the inital cycles
+    TIMER_A0->CCR[0] = CCR0; // cycles
+    // XXX : review below
+    //step 2 - control regs - enable interrupts , and compare mode
+
+    TIMER_A0->CCTL[0] = TIMER_A_CCTLN_CCIE;
+
+    //Step 3 - Select MCLK and select up mode
+    TIMER_A0 -> CTL = TIMER_A_CTL_TASSEL_2 | TIMER_A_CTL_MC_1; // tassel - select clock src, mc - select continuious mode
+
+    // Step 4 = enable NVIC
+    NVIC->ISER[0] = (1 << (TA0_0_IRQn & 0x1F)); // for CCR0
+
+    // Step 5 - enable globally
+    __enable_irq();
+
+
+}
+
+
+void init_SPI(){
+    // Step 1 - put in rst state
+    EUSCI_B0 -> CTLW0 |= EUSCI_B_CTLW0_SWRST;
+    // Step 2 - set as master of bus, synchronous mode and select smclk
+    EUSCI_B0 -> CTLW0 |= EUSCI_B_CTLW0_SWRST
+            |EUSCI_B_CTLW0_MSB |EUSCI_B_CTLW0_MST
+            |EUSCI_B_CTLW0_SYNC |EUSCI_B_CTLW0_UCSSEL_2;
+    EUSCI_B0 -> CTLW0 &=~(EUSCI_B_CTLW0_CKPL | EUSCI_B_CTLW0_CKPH);
+    EUSCI_B0 -> BRW = 0x01; // run full smclk speed
+    // Step 3 - select simo, somi and sclk
+    P1->SEL0 |= (SCLK | SIMO);
+    P1->SEL1 &= ~(SCLK | SIMO);
+    // Step 4 - clears software rst
+    EUSCI_B0 -> CTLW0 &= ~EUSCI_B_CTLW0_SWRST;
+}
 float getDutyCycle(){
 	char *dc;
 	float _dc;
