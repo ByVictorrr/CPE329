@@ -16,7 +16,7 @@
 
 
 
-#define LEN 19
+#define LEN 144
 #define F_INPUT 1.5
 #define T_OUTPUT 20
 #define K 1000 //  rep kila
@@ -24,6 +24,7 @@
 
 
 
+typedef enum{FALSE, TRUE} bool;
 
 int counter;
 
@@ -123,8 +124,20 @@ uint16_t voltage_to_dacData(float volts){
     return abs(GAIN | SHDN | data);
 }
 
+// if you decrment the delta by half you have to increase the LEN by 2
+void gen_arrays(float *voltages, int size, float delta, bool isSymetric){
+    int i, mid = (LEN - 1)/2;
+    voltages[0] = 0;
+     for (i=1; i<size; i++){
+         // for symetric waves mirror image
+      if (isSymetric && i > mid){
+            voltages[i] = voltages[i-1] - delta;
+       }else{
+            voltages[i] = delta + voltages[i-1];
+        }
+     }
 
-
+}
 void main(void)
 {
     P1->DIR |= _CS;
@@ -134,7 +147,12 @@ void main(void)
     init_SPI();
     set_everything();
     // For triangle wave
-    float voltages[LEN] = {0, .1, .3, .5, .7, .9, 1.1, 1.3, 1.5, 1.7, 1.9, 1.7, 1.5, 1.3, 1.1, .9, .7, .5,.3};
+    //float voltages[LEN] = {0, .1, .3, .5, .7, .9, 1.1, 1.3, 1.5, 1.7, 1.9, 1.7, 1.5, 1.3, 1.1, .9, .7, .5,.3};
+
+    float voltages[LEN];
+    gen_arrays(voltages, LEN, .03125, FALSE);
+
+    //
 
     while(1){
         send_to_DAC(voltage_to_dacData(voltages[counter]));
