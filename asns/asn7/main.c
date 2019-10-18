@@ -74,9 +74,9 @@ void init_SPI(){
     EUSCI_B0 -> CTLW0 |= EUSCI_B_CTLW0_SWRST;
     // Step 2 - set as master of bus, synchronous mode and select smclk
     EUSCI_B0 -> CTLW0 |= EUSCI_B_CTLW0_SWRST |
-            EUSCI_B_CTLW0_MST
-            |EUSCI_B_CTLW0_SYNC |EUSCI_B_CTLW0_UCSSEL_2;
-    EUSCI_B0 -> CTLW0 &=~(EUSCI_B_CTLW0_CKPL | EUSCI_B_CTLW0_CKPH);
+            EUSCI_B_CTLW0_MST | EUSCI_B_CTLW0_MSB
+            |EUSCI_B_CTLW0_SYNC |EUSCI_B_CTLW0_UCSSEL_2 | EUSCI_B_CTLW0_CKPL; // mode (0,1)
+	//EUSCI_B0 -> CTLW0 &=~(EUSCI_B_CTLW0_CKPL | EUSCI_B_CTLW0_CKPH);
     EUSCI_B0 -> BRW = 0x01; // run full smclk speed
     // Step 3 - select simo, somi and sclk
     P1->SEL0 |= (SCLK | SIMO);
@@ -84,13 +84,6 @@ void init_SPI(){
     // Step 4 - clears software rst
     EUSCI_B0 -> CTLW0 &= ~EUSCI_B_CTLW0_SWRST;
 
-
-    // Step 5 - enable interrupt (for transmitting)
-    //EUSCI_B0 -> CTLW0 ->IE = EUSCI_B_IE_RXIE; // enable interruptsP3->DIR |= _CS;
-    //NVIC->ISER[0] = (1 << EUSCIB_IRQn); // enable on lookup table
-    //__enable_irq(); // enable globals
-    // Step 6 - mode 0,0
-   // EUSCI_B0 -> CTLW0 &= ~(EUSCI_B_CTLW0_CKPH | EUSCI_B_CTLW0_CKPL);
 }
 
 
@@ -120,8 +113,8 @@ void send_to_DAC(uint16_t out_voh){
 // returns -1 on error
 uint16_t voltage_to_dacData(float volts){
 
-    float slope =9.69;
-    int b =4063;
+    float slope =1251;
+    int b =-15.3;
     uint16_t data;
     // data = slope * (volts) + b
     if (volts >= 0 && volts<=3.3)
@@ -144,8 +137,8 @@ void main(void)
     float voltages[LEN] = {0, .1, .3, .5, .7, .9, 1.1, 1.3, 1.5, 1.7, 1.9, 1.7, 1.5, 1.3, 1.1, .9, .7, .5,.3};
 
     while(1){
-        //send_to_DAC(voltage_to_dacData(voltages[counter]));
-        send_to_DAC(0x3FF | SHDN | GAIN);
+        send_to_DAC(voltage_to_dacData(voltages[counter]));
+        //send_to_DAC(0xFFF | SHDN | GAIN);
     }
 
 }

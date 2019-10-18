@@ -54,6 +54,39 @@ void TA0_0_IRQHandler(void){
 }
 
 
+void send_to_DAC(uint16_t out_voh){
+    // Step 0 - sep bytes
+    uint8_t loByte = out_voh & 0xFF, highByte = ((out_voh >> 8) & 0xFF) ;
+    // Step 1 - set up _CS
+    P1->OUT &= ~_CS;
+
+    // Step 2 - send the high byte first(put high byte in buffer)
+    EUSCI_B0 ->TXBUF = highByte;
+    // Step 3 - wait for Tx flag when tx buffer empty
+    while(!(EUSCI_B0 ->IFG & EUSCI_B_IFG_TXIFG));
+    // Step 3.1 put more data in the buffer
+    EUSCI_B0 ->TXBUF = loByte;
+    // Step 4 - clear the rx flag before using
+    //EUSCI_B0 ->IFG &= ~EUSCI_B_IFG_RXIFG;
+    // Step 5 - use  the recieve flag to indicate when we sent the first 8 bits
+    while(!(EUSCI_B0 ->IFG & EUSCI_B_IFG_RXIFG));
+    // Step 6 - after transmitting
+    P1->OUT |= _CS;
+
+}
+
+// returns a uint16 (12bits) - representing the voltage level
+// returns -1 on error
+uint16_t voltage_to_dacData(float volts){
+    float slope =9.69;
+    int b =4063;
+    uint16_t data;
+    // data = slope * (volts) + b
+    if (volts >= 0 && volts<=3.3)
+        data = slope*volts+b;
+
+    return abs(GAIN | SHDN | data);
+}
 
 void init_Timer(){
 
