@@ -23,6 +23,7 @@ main.obj: /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/_ti_co
 main.obj: /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/linkage.h
 main.obj: /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/_defs.h
 main.obj: /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/machine/_limits.h
+main.obj: ../DAC.h
 
 ../main.c: 
 /opt/ccstudio/ccs/ccs_base/arm/include/msp.h: 
@@ -47,3 +48,4 @@ main.obj: /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/machin
 /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/linkage.h: 
 /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/_defs.h: 
 /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/machine/_limits.h: 
+../DAC.h: 
