@@ -79,10 +79,12 @@ uint16_t voltage_to_dacData(float volts){
     int b =-15.3;
     uint16_t data;
     // data = slope * (volts) + b
-    if (volts >= 0 && volts<=3.3)
-        data = slope*volts+b;
+    if (volts > 0 && volts<=3.3)
+        if ((data = slope*volts+b) < 0)
+            data = 0;
 
-    return abs(GAIN | SHDN | data);
+
+    return GAIN | SHDN | data;
 }
 
 // if you decrment the delta by half you have to increase the LEN by 2

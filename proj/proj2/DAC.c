@@ -5,32 +5,6 @@
 
 
 
-void init_TimerA(){
-    // step 0 - set up the GPIO
-    P4->DIR |= BIT0 | BIT1;
-    P4->SEL0 &= ~BIT0 & BIT1;
-    P4->SEL1 &= ~BIT0 & ~BIT1;
-    P4->OUT&=~BIT0;
-
-    // Step 1 - set the inital cycles
-    TIMER_A0->CCR[0] = CCR0; // cycles
-    // XXX : review below
-    //step 2 - control regs - enable interrupts , and compare mode
-
-    TIMER_A0->CCTL[0] = TIMER_A_CCTLN_CCIE;
-
-    //Step 3 - Select MCLK and select up mode
-    TIMER_A0 -> CTL = TIMER_A_CTL_TASSEL_2 | TIMER_A_CTL_MC_1; // tassel - select clock src, mc - select continuious mode
-
-    // Step 4 = enable NVIC
-    NVIC->ISER[0] = (1 << (TA0_0_IRQn & 0x1F)); // for CCR0
-
-    // Step 5 - enable globally
-    __enable_irq();
-
-
-}
-
 
 void init_SPI(){
     // Step 1 - put in rst state
@@ -55,7 +29,6 @@ void send_to_DAC(uint16_t out_voh){
     uint8_t loByte = out_voh & 0xFF, highByte = ((out_voh >> 8) & 0xFF) ;
     // Step 1 - set up _CS
     P1->OUT &= ~_CS;
-
     // Step 2 - send the high byte first(put high byte in buffer)
     EUSCI_B0 ->TXBUF = highByte;
     // Step 3 - wait for Tx flag when tx buffer empty
@@ -72,31 +45,46 @@ void send_to_DAC(uint16_t out_voh){
 }
 
 
+
 // returns a uint16 (12bits) - representing the voltage level
 // returns -1 on error
 uint16_t voltage_to_dacData(float volts){
 
     float slope =1251;
     int b =-15.3;
-    uint16_t data;
+    uint16_t data=0;
     // data = slope * (volts) + b
-    if (volts >= 0 && volts<=3.3)
+    if (volts > 0 && volts<=3.3)
         data = slope*volts+b;
+    else{
+        return GAIN | SHDN | 0;
+    }
+    if (data < 0)
+        data = 0;
 
-    return abs(GAIN | SHDN | data);
+    return GAIN | SHDN | data;
 }
-
 // if you decrment the delta by half you have to increase the LEN by 2
 void gen_arrays(float *voltages, int size, float delta, bool isSymetric, double (*fn)(double)){
     int i, mid = (LEN - 1)/2;
+    float prev = 0, curr;
     voltages[0] = 0;
      for (i=1; i<size; i++){
          // for symetric waves mirror image
       if (isSymetric && i > mid){
-            voltages[i] = fn == NULL? voltages[i-1] - delta: fn(2*voltages[i]) +1;
+            curr = prev - delta;
+            voltages[i] = curr;
+            if (fn != NULL){
+               voltages[i] =  fn(2*curr) + 1;
+            }
        }else{
-           voltages[i] = fn == NULL? voltages[i-1] + delta: fn(2*voltages[i]) + 1;
+           curr = prev + delta;
+            voltages[i] = curr;
+            if (fn != NULL){
+               voltages[i] =  fn(2*curr) + 1;
+            }
         }
+      prev = curr;
      }
 
 }

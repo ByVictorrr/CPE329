@@ -34,13 +34,12 @@ void main(void)
 
     float sine_voltages[LEN];
     //memset(sine_voltages, 0, LEN);
-    gen_arrays(sine_voltages, LEN, .025, FALSE, cos); // generates a good sine wave
-
-    //
-
+   gen_arrays(sine_voltages, LEN, .1,TRUE, cos); // generates a good sine wave
+   // //sine_voltages[0] = 0;
+    //sine_voltages[1] = 3;
+    int arr[2] = {1,3};
     while(1){
-        send_to_DAC(voltage_to_dacData(sine_voltages[counter]));
-        //send_to_DAC(0xFFF | SHDN | GAIN);
+        send_to_DAC(voltage_to_dacData(arr[counter]));
     }
 
 }

@@ -17,18 +17,13 @@
 
 
 #define LEN 128
-#define F_INPUT 1.5
+
 #define T_OUTPUT 20
 #define K 1000 //  rep kila
 #define CCR0  (uint16_t)(F_INPUT * T_OUTPUT * K)/LEN
 
 typedef enum{FALSE, TRUE} bool;
 int counter;
-
-
-// inits timerA
-void init_TimerA();
-
 
 void init_SPI();
 

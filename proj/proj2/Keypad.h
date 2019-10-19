@@ -21,7 +21,6 @@ static const signed char lookup[4][3] = {
 #define ROW4 BIT3
 
 
-//rows = p6.7-p6.4
 
 void Keypad_init();
 
