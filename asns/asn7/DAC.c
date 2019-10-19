@@ -3,19 +3,6 @@
 #include <math.h>
 #include "DAC.h"
 
-// Handler for CCR0
-void TA0_0_IRQHandler(void){
-
-    // Step 0 - for debuging
-    P1->OUT=BIT0;
-    // Step 1 - check if  counter over 21 if so reset it to zero else set it to itself + 1
-    counter = counter >= LEN - 1 ? 0 : counter+1;
-    //step 3 - turn off capture/compare interrupt flag(to trigger again on rising edge)
-    TIMER_A0 -> CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
-    // Step 2 - add 960 cycles
-    TIMER_A0 -> CCR[0] = CCR0; // up mode just set it equal to it self
-    P1->OUT=~BIT0;
-}
 
 void init_TimerA(){
     // step 0 - set up the GPIO
@@ -100,15 +87,25 @@ uint16_t voltage_to_dacData(float volts){
 
 // if you decrment the delta by half you have to increase the LEN by 2
 void gen_arrays(float *voltages, int size, float delta, bool isSymetric, double (*fn)(double)){
-    int i, mid = (LEN - 1)/2;
+    int i, mid = (LEN - 1)/2;	
+	float prev = 0, curr;
     voltages[0] = 0;
      for (i=1; i<size; i++){
          // for symetric waves mirror image
       if (isSymetric && i > mid){
-            voltages[i] = fn == NULL? voltages[i-1] - delta: fn(2*voltages[i]) +1;
+            curr = prev - delta;
+			voltages[i] = curr;
+            if (fn != NULL){
+               voltages[i] =  fn(2*curr) + 1;
+            }
        }else{
-           voltages[i] = fn == NULL? voltages[i-1] + delta: fn(2*voltages[i]) + 1;
+           curr = prev + delta;
+			voltages[i] = curr;
+            if (fn != NULL){
+               voltages[i] =  fn(2*curr) + 1;
+            }
         }
+      prev = curr;
      }
 
 }
