@@ -13,7 +13,7 @@
 #define FREQ_400HZ '4'
 #define FREQ_500HZ '5'
 
-#define F_INPUT 1500000
+#define F_INPUT 12000000
 #define DURATION_WHILE_LOOP 0.182192
 #define CCR0_WHILE_LOOP DURATION_WHILE_LOOP *F_INPUT
 
@@ -76,7 +76,7 @@ void TA0_N_IRQHandler(void){
 //XXX : NEED TO WRITE A GENERAL FUNCTION TO RETURN THE SHAPE
 struct data sawtooth(int freq){
     uint16_t ccr0;
-	ccr0 = F_INPUT/(LEN_SAW*freq) + ceil(CCR0_WHILE_LOOP);
+	ccr0 = F_INPUT/(LEN_SAW*freq) ;//+ ceil(CCR0_WHILE_LOOP);
 
 	struct data ret;
 	    ret.ptr = saw_voltages;
@@ -91,8 +91,7 @@ struct data square(int freq){
 
 	// step 3 - get ccr0 needed for the freq
     uint16_t ccr0;
-	ccr0 = F_INPUT/(2*freq) ; //ceil(CCR0_WHILE_LOOP);
-
+	ccr0 = F_INPUT/(2*freq);//  - ceil(CCR0_WHILE_LOOP);
 	// use 
 	struct data ret;
 	ret.ptr = square_voltages ;
@@ -108,7 +107,7 @@ struct data sinusoid(int freq){
     uint16_t ccr0;
 	// use sin(2x-pi/2)+1 to model this
 	// step 2 - get ccr0 needed for the freq
-	ccr0 = F_INPUT/(LEN_SINE*freq) + ceil(CCR0_WHILE_LOOP);
+	ccr0 = F_INPUT/(LEN_SINE*freq) ;
 	// step 3 - send data to the dac
 	struct data ret;
 	    ret.ptr = sine_voltages;
@@ -118,6 +117,14 @@ struct data sinusoid(int freq){
 	    ret.ccr[1] = 0;
 
 	    return ret;
+}
+
+void compensate_freq_fromDC(struct data *wave_data){
+    // noticed for every 10 percent dc the freq increases by 2
+    // cond 1 - we cant change the dc so keep ccr0-ccr1 cons
+    // cond 2 - ccr0_f = 2ccr0_i from cond 1 we must double ccr1_i
+    wave_data->ccr[1] *= 2;
+    wave_data->ccr[0] *= 2;
 }
 
 // XXX : problem changing the freq changes the ccr0 value and then that changes the freq 
@@ -137,6 +144,7 @@ void set_DutyCycle(struct data *wave_data, int dutyC, int freq){
 	wave_data->ccr[1] = floor((1 - real_DC)*wave_data->ccr[0]); // XXX relate dutyC to ccr1
 	TIMER_A0 -> CCR[1] = wave_data->ccr[1]; // inital
 	//------------------------XXX-------------------------
+	compensate_freq_fromDC(wave_data);
 }
 
 
@@ -182,56 +190,54 @@ void main(void)
 {
     P1->DIR|=BIT0;
     P1->OUT&=~BIT0;
-	char key;
-	int freq = 100, dutyC = 10;
+	signed char key;
+	int dutyC = 90;
+	int freq = 500, duty_C = 100 - dutyC;
 	char wave_type = SQUARE;
 
 	// step 1 - init everything
 	init_SPI();
 	P1->DIR |= _CS;
 	set_clk("SMCLK");
-	set_DCO(1.5);
+	set_DCO(12);
 	Keypad_init();
 	Init_LCD();
 
 	// step 2 - set the data arrays for pts
 
 	gen_arrays(square_voltages, LEN_SQUARE, 2 , FALSE, NULL);
-	gen_arrays(sine_voltages, LEN_SINE, .025 , FALSE, sin); // sine wave XXX (Configure step size and LEN)
+	gen_arrays(sine_voltages, LEN_SINE, .025 , FALSE, cos); // sine wave XXX (Configure step size and LEN)
 	gen_arrays(saw_voltages, LEN_SAW, .025 , FALSE, NULL); // sine wave XXX (Configure step size and LEN)
 
 
 	// by defualt
 	wave_data = square(freq);
-	set_DutyCycle(&wave_data,dutyC, freq);
+    set_DutyCycle(&wave_data,duty_C,freq);
 	init_TimerA(wave_data.ccr[0]);
 
 	while(1){
 	    //P1->OUT ^= BIT0;
-	   send_to_DAC(voltage_to_dacData(wave_data.ptr[wave_data.i]));
-	   /*
-		Write_string_LCD("(1-5): change freq, (7-9): change wave");
-		next_line_pos();
+	    send_to_DAC(voltage_to_dacData(wave_data.ptr[wave_data.i]));
+		//Write_string_LCD("(1-5): change freq, (7-9): change wave");
+		//next_line_pos();
 		//delay_us(10000000);
-		Write_string_LCD("(*,0,#): change duty cycle");
-		key=read_key();
+		//Write_string_LCD("(*,0,#): change duty cycle");
+		if ((key=read_key()) != -1){
 		// by default wave_data is square
 		// State 1 - select wave
 		if (strchr(SELECT_WAVE, key) != NULL){
 	        if ((wave_type = key) == SAW){
 	            wave_data = sawtooth(freq);
-				set_DutyCycle(&wave_data,50, freq);
 	        }else if (wave_type == SQUARE){
 	            wave_data = square(freq);
 				set_DutyCycle(&wave_data,50,freq);
 	        }else if (wave_type == SINE){
 	            wave_data = sinusoid(freq);
-				set_DutyCycle(&wave_data,50,freq);
 	        }
 
 	    // state 2 - select freq
 		}else if (strchr(SELECT_FREQ, key) != NULL){
-			freq = (key + '0')*100;
+			freq = (key - '0')*100;
 			// selecting freq effects the duty cycle which means we have to compensate of moving ccr[1]
 			set_DutyCycle(&wave_data, dutyC,freq); // setting it in here makes it orderide
 		// state 3 - select dc
@@ -250,11 +256,10 @@ void main(void)
 				set_DutyCycle(&wave_data,dutyC,freq);
 			}
 		}
-	 delay_us(1000000);
+	 //delay_us(1000000);
 	 Clear_LCD();
 	 Home_LCD();
-	 */
-
+	}
 	}
 
 }

@@ -16,13 +16,7 @@ void Keypad_init(){
     // Step 2 - inti the inputs
     P6->DIR &= ~(ROW1 | ROW2 | ROW3 | ROW4); // row inputs
     P6->REN |= (ROW1 | ROW2 | ROW3 | ROW4); // enable resistor
-    P6->OUT |= (ROW1 | ROW2 | ROW3 | ROW4); // pull down
-
-    // Step 3 - enable interupts
-    //P6->IE |= (ROW1 | ROW2 | ROW3 | ROW4); // pull down
-    // Step 4 - interrupt on rising edge
-    //P6->IES |=(ROW1 | ROW2 | ROW3 | ROW4);
-
+    P6->OUT &= ~(ROW1 | ROW2 | ROW3 | ROW4); // pull down
 }
 
 
@@ -64,26 +58,12 @@ signed char read_key(){
     if (col == 3 )
         return -1;
 
+    /*
     // cond 2 - if two btns pressed
     if (count_ones(rows, 4) > 1)
         return 0;
 
+    */
     // Step 2 - find what btn is pressed
     return lookup[get_row(rows, 4)][col];
 }
-
-void display_key_press_LCD(){
-
-    signed char key;
-   if ((key = read_key())== 0){
-        Write_string_LCD("Mult Press");
-    }else if (key == -1){
-        //Write_string_LCD("Nothing");
-    }else
-        Write_char_LCD(read_key());
-}
-
-/**
- * main.c
- */
-

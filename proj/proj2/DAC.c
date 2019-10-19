@@ -69,6 +69,9 @@ void gen_arrays(float *voltages, int size, float delta, bool isSymetric, double 
     int i, mid = (LEN - 1)/2;
     float prev = 0, curr;
     voltages[0] = 0;
+    if (fn != NULL){
+        voltages[0] = fn(2*voltages[0])+1;
+    }
      for (i=1; i<size; i++){
          // for symetric waves mirror image
       if (isSymetric && i > mid){
