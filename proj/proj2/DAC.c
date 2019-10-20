@@ -70,7 +70,7 @@ void gen_arrays(float *voltages, int size, float delta, bool isSymetric, double 
     float prev = 0, curr;
     voltages[0] = 0;
     if (fn != NULL){
-        voltages[0] = fn(2*voltages[0])+1;
+        voltages[0] = 1.5*fn(2*voltages[0])+1.5;
     }
      for (i=1; i<size; i++){
          // for symetric waves mirror image
@@ -78,13 +78,13 @@ void gen_arrays(float *voltages, int size, float delta, bool isSymetric, double 
             curr = prev - delta;
             voltages[i] = curr;
             if (fn != NULL){
-               voltages[i] =  fn(2*curr) + 1;
+               voltages[i] =  1.5*fn(2*curr) + 1.5;
             }
        }else{
            curr = prev + delta;
             voltages[i] = curr;
             if (fn != NULL){
-               voltages[i] =  fn(2*curr) + 1;
+               voltages[i] =  1.5*fn(2*curr) + 1.5;
             }
         }
       prev = curr;
