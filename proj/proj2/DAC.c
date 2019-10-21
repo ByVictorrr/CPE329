@@ -59,14 +59,12 @@ uint16_t voltage_to_dacData(float volts){
     else
         return GAIN | SHDN | 0;
 
-    if (data < 0)
-        data = 0;
 
     return GAIN | SHDN | data;
 }
 // if you decrment the delta by half you have to increase the LEN by 2
 void gen_arrays(float *voltages, int size, float delta, bool isSymetric, double (*fn)(double)){
-    int i, mid = (LEN - 1)/2;
+    int i, mid = (size - 1)/2;
     float prev = 0, curr;
     voltages[0] = 0;
 
@@ -81,7 +79,7 @@ void gen_arrays(float *voltages, int size, float delta, bool isSymetric, double 
             if (fn != NULL){
                voltages[i] =  1.5*fn(2*curr) + 1.5;
             }
-		// cond 2 - if symetric or just plotting half
+		// cond 2 - if symmetric or just plotting half
        }else{
            curr = prev + delta;
             voltages[i] = curr;
