@@ -34,4 +34,6 @@ void send_to_DAC(uint16_t out_voh);
 uint16_t voltage_to_dacData(float volts);
 // if you decrment the delta by half you have to increase the LEN by 2
 void gen_arrays(float *voltages, int size, float delta, bool isSymetric, double (*fn)(double));
+
+void gen_square(float *voltages, int size, int dutyCycle);
 #endif

@@ -29,7 +29,7 @@
 // length of array holding values for saw wave
 #define LEN_SAW 115 // keep this
 #define LEN_SINE 124 // keep this
-#define LEN_SQUARE 2
+#define LEN_SQUARE 100
 #define LEN_LOG 200
 
 //#define F_INPUT 1500000 // 1.5 Mhz
@@ -65,16 +65,6 @@ void TA0_0_IRQHandler(void){
 	//P1->OUT &= ~BIT0;
 }
 
-void TA0_N_IRQHandler(void){
-	// Step 1 - toggle BIT0
-	P1->OUT |= BIT0;
-	wave_data.i = wave_data.i >= wave_data.max_index? 0 : wave_data.i+1;
-	//step 3 - turn off capture/compare interrupt flag
-	TIMER_A0 -> CCTL[1] &= ~TIMER_A_CCTLN_CCIFG;
-	// Step 2 - add 720 cycles
-	TIMER_A0 -> CCR[1] = wave_data.ccr[1]; // add .
-
-}
 
 
 //XXX : NEED TO WRITE A GENERAL FUNCTION TO RETURN THE SHAPE
@@ -95,7 +85,7 @@ struct data square(int freq){
 
 	// step 3 - get ccr0 needed for the freq
     uint16_t ccr0;
-	ccr0 = F_INPUT/(2*freq);//  - ceil(CCR0_WHILE_LOOP);
+	ccr0 = F_INPUT/(LEN_SQUARE*freq);//  - ceil(CCR0_WHILE_LOOP);
 	// use 
 	struct data ret;
 	ret.ptr = square_voltages ;
@@ -104,6 +94,7 @@ struct data square(int freq){
 	ret.ccr[0] = ccr0;
 	ret.ccr[1] = 0;
 
+	gen_square(square_voltages, LEN_SQUARE, 50);
 	return ret;
 }
 
@@ -139,50 +130,9 @@ struct data logfn(int freq){
 }
 
 
-void compensate_freq_fromDC(struct data *wave_data){
-    // noticed for every 10 percent dc the freq increases by 2
-    // cond 1 - we cant change the dc so keep ccr0-ccr1 cons
-    // cond 2 - ccr0_f = 2ccr0_i from cond 1 we must double ccr1_i
-    wave_data->ccr[0] =  wave_data->ccr[0] * 2;
-    wave_data->ccr[1] = wave_data->ccr[1] * 2;
-
-}
-void uncompensate_freq_fromDC(struct data *wave_data){
-    // noticed for every 10 percent dc the freq increases by 2
-    // cond 1 - we cant change the dc so keep ccr0-ccr1 cons
-    // cond 2 - ccr0_f = 2ccr0_i from cond 1 we must double ccr1_i
-    wave_data->ccr[0] =  wave_data->ccr[0] * 1/2;
-    wave_data->ccr[1] = wave_data->ccr[1] * 1/2;
-
-}
-
-
 // XXX : problem changing the freq changes the ccr0 value and then that changes the freq 
 //
 // denote that the duty cycle is 50 % if ccr[1]  == 0
-void set_DutyCycle(struct data *wave_data, int dutyC, int freq){
-	// cond 1 - if the wave_data is a square  then change it to 
-	if (wave_data -> ptr == square_voltages){
-	    float real_DC = dutyC/100.0;
-	    float frac = 1-real_DC;
-	    //------------------------XXX-------------------------
-	    wave_data->ccr[1] = ceil((frac)*wave_data->ccr[0]); // XXX relate dutyC to ccr1
-	    TIMER_A0 -> CCR[1] = wave_data->ccr[1]; // inital
-	    //------------------------XXX-------------------------
-		if (dutyC == 50)
-		    TIMER_A0->CCTL[1] &= ~TIMER_A_CCTLN_CCIE;
-		else{
-		    //compensate_freq_fromDC(wave_data);
-		    TIMER_A0->CCTL[1] = TIMER_A_CCTLN_CCIE;
-		}
-	// cond2 - if sine or saw
-	}else{
-		TIMER_A0->CCTL[1] &= ~TIMER_A_CCTLN_CCIE;
-	// step 1 - set ccr[1] to the duty cycle
-	}
-
-}
-
 
 
 void init_TimerA(uint16_t ccr0){
@@ -219,11 +169,10 @@ void init_TimerA(uint16_t ccr0){
 
 void main(void)
 {
-    P1->DIR|=BIT0;
-    P1->OUT&=~BIT0;
+
 	signed char key;
-	volatile int duty_C = 50, i=0;
-	volatile int freq = 100, dutyC = 100 - duty_C;
+	int dutyC = 50;
+	int freq = 100;
 	char wave_type = SQUARE;
 
 	// step 1 - init everything
@@ -236,31 +185,31 @@ void main(void)
 
 	// step 2 - set the data arrays for pts
 
-	gen_arrays(square_voltages, LEN_SQUARE, 2.7 , FALSE, NULL);
+	gen_square(square_voltages, LEN_SQUARE, dutyC);
 	gen_arrays(sine_voltages, LEN_SINE, .025 , FALSE, cos); // sine wave XXX (Configure step size and LEN)
 	gen_arrays(saw_voltages, LEN_SAW, .025 , FALSE, NULL); // sine wave XXX (Configure step size and LEN)
 	gen_arrays(log_voltages, LEN_LOG, .05 , TRUE, log10); // sine wave XXX (Configure step size and LEN)
 
-	/*
 	// Step 3 - display on lcd
-	Write_string_LCD("(1-5): change freq, (7-9): change wave");
+	/*
+	Clear_LCD();
+    delay_us(1000000);
+	Write_string_LCD("(1-6): f ; 6-9: wave");
+    delay_us(1000000);
 	next_line_pos();
-	delay_us(10000000);
-	Write_string_LCD("(*,0,#): change duty cycle");
-*/
+	delay_us(1000000);
+	Write_string_LCD("(*,0,#):duty cycle");
+	*/
 	
 	// step 4 - by defualt and init timers
 	wave_data = square(freq);
-    set_DutyCycle(&wave_data, dutyC,freq);
 	init_TimerA(wave_data.ccr[0]);
 
 
 	while(1){
 	    //P1->OUT ^= BIT0;
 	    send_to_DAC(voltage_to_dacData(wave_data.ptr[wave_data.i]));
-
 		if ((key=read_key()) != -1){
-
 		// by default wave_data is square
 		// State 1 - select wave
 		if (strchr(SELECT_WAVE, key) != NULL){
@@ -268,7 +217,6 @@ void main(void)
 	            wave_data = sawtooth(freq);
 	        }else if (wave_type == SQUARE){
 	            wave_data = square(freq);
-				set_DutyCycle(&wave_data,50,freq);
 	        }else if (wave_type == SINE){
 	            wave_data = sinusoid(freq);
 	        }else if (wave_type == LOG){
@@ -281,74 +229,19 @@ void main(void)
 			// step 2 - relate the ccr0 value to frq
 			wave_data.ccr[0] = F_INPUT/((wave_data.max_index+1)*freq);
 			// selecting freq effects the duty cycle which means we have to compensate of moving ccr[1]
-			set_DutyCycle(&wave_data, dutyC,freq); // setting it in here makes it orderide //XXX AFTER debuggint selection dc
 		// state 3 - select dc but also make sure we are using square voltages
 		}else if (strchr(SELECT_DUTYCYCLE, key) != NULL && wave_data.ptr == square_voltages){
 			// XXX todo 
 			// step 1 -  enable ccrn
 			// step 2 - check the ccr0 value so that t0-t1/ T = duty cycle
-			if (key == '*' && duty_C > 10){ // decreases by 10
-				duty_C = duty_C-10;
-				dutyC = 100 - duty_C;
-				set_DutyCycle(&wave_data,dutyC,freq);
-				if (dutyC != 50 && i == 0){
-				    compensate_freq_fromDC(&wave_data);
-				    i++;
-				}
-			}else if (key == '#' && duty_C < 90){
-				duty_C = duty_C+10;
-				dutyC = 100 - duty_C;
-				set_DutyCycle(&wave_data,dutyC,freq);
-			    if (dutyC != 50 && i == 0){
-			        compensate_freq_fromDC(&wave_data);
-			        i++;
-			    }
+			if (key == '*' && dutyC > 10){ // decreases by 10
+				dutyC -= 10;
+			}else if (key == '#' && dutyC < 90){
+				dutyC += 10;
 			}else if (key == '0'){
-				duty_C = 50;
-				dutyC = 100 - duty_C;
-				set_DutyCycle(&wave_data,dutyC,freq);
-				uncompensate_freq_fromDC(&wave_data);
-				i=0;
+				dutyC = 50;
 			}
-		/*
-        if (strchr(SELECT_DUTYCYCLE, key) != NULL && wave_data.ptr == square_voltages){
-            // XXX todo
-            // step 1 -  enable ccrn
-            // step 2 - check the ccr0 value so that t0-t1/ T = duty cycle
-            if (key == '*' && duty_C < 90){ // decreases by 10
-                duty_C += 10;
-                dutyC = 100 - duty_C;
-                set_DutyCycle(&wave_data,dutyC,freq);
-                if (dutyC == 50){ // this is a bug
-                    wave_data = square(freq);
-                    i=0;
-                }else{
-                if (i == 0){ // idk this is a bug
-                    compensate_freq_fromDC(&wave_data);
-                    i++;
-                }
-                }
-            }else if (key == '#' && duty_C > 10){ // inc by 10
-                duty_C -= 10;
-                dutyC = 100 - duty_C;
-                set_DutyCycle(&wave_data,dutyC,freq);
-                if (dutyC == 50){ // this is a bug
-                            wave_data = square(freq);
-                            i=0;
-                }else{
-                  set_DutyCycle(&wave_data,dutyC,freq);
-                  if (i == 0){ // idk this is a bug
-                      compensate_freq_fromDC(&wave_data);
-                      i++;
-                  }
-                 }
-            }else if (key == '0'){
-                wave_data = square(freq);
-
-            }
-            delay_us(3000000);
-		}
-*/
+			gen_square(square_voltages, LEN_SQUARE, dutyC);
 			delay_us(2000000);
 		}
 	}

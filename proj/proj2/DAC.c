@@ -56,9 +56,9 @@ uint16_t voltage_to_dacData(float volts){
     // data = slope * (volts) + b
     if (volts > 0 && volts<=3.3)
         data = slope*volts+b;
-    else{
+    else
         return GAIN | SHDN | 0;
-    }
+
     if (data < 0)
         data = 0;
 
@@ -69,17 +69,19 @@ void gen_arrays(float *voltages, int size, float delta, bool isSymetric, double 
     int i, mid = (LEN - 1)/2;
     float prev = 0, curr;
     voltages[0] = 0;
+
     if (fn != NULL){
         voltages[0] = 1.5*fn(2*voltages[0])+1.5;
     }
-     for (i=1; i<size; i++){
-         // for symetric waves mirror image
-      if (isSymetric && i > mid){
+
+     for (i=1; i<size; i++){	// cond 1 - if the wave is symetic then plot its points sym }else if(isSymetric && i > mid){
+		 if (i > mid && isSymetric){
             curr = prev - delta;
             voltages[i] = curr;
             if (fn != NULL){
                voltages[i] =  1.5*fn(2*curr) + 1.5;
             }
+		// cond 2 - if symetric or just plotting half
        }else{
            curr = prev + delta;
             voltages[i] = curr;
@@ -90,4 +92,16 @@ void gen_arrays(float *voltages, int size, float delta, bool isSymetric, double 
       prev = curr;
      }
 
+}
+void gen_square(float *voltages, int size, int dutyCycle){
+
+	int i;
+    for (i=0; i<size; i++){	
+		// turn on the the voltage high
+		if (i > (1 - dutyCycle/100.0)*size){
+			voltages[i] = 3.2;
+		}else{
+			voltages[i] = 0;
+		}	
+}
 }
