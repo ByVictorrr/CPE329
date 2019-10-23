@@ -22,6 +22,11 @@ main.obj: /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/stdio.
 main.obj: /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/_ti_config.h
 main.obj: /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/linkage.h
 main.obj: /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/stdarg.h
+main.obj: /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/string.h
+main.obj: ../DAC.h
+main.obj: /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/math.h
+main.obj: /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/_defs.h
+main.obj: /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/machine/_limits.h
 
 ../main.c: 
 /opt/ccstudio/ccs/ccs_base/arm/include/msp.h: 
@@ -45,3 +50,8 @@ main.obj: /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/stdarg
 /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/_ti_config.h: 
 /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/linkage.h: 
 /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/stdarg.h: 
+/opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/string.h: 
+../DAC.h: 
+/opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/math.h: 
+/opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/_defs.h: 
+/opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/machine/_limits.h: 
