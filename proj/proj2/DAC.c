@@ -50,7 +50,7 @@ void send_to_DAC(uint16_t out_voh){
 // returns -1 on error
 uint16_t voltage_to_dacData(float volts){
 
-    float slope =1251;
+    float slope =1250;
     int b =-15.3;
     uint16_t data=0;
     // data = slope * (volts) + b
@@ -97,7 +97,7 @@ void gen_square(float *voltages, int size, int dutyCycle){
     for (i=0; i<size; i++){	
 		// turn on the the voltage high
 		if (i > (1 - dutyCycle/100.0)*size){
-			voltages[i] = 3.2;
+			voltages[i] = 3.0;
 		}else{
 			voltages[i] = 0;
 		}	
