@@ -64,7 +64,7 @@ void main(void)
 {
 
 
-    set_DCO(24.0); // 24Mhz
+    set_DCO(3); // 24Mhz
     set_clk("MCLK");
     //set_clk("SMCLK");
     set_everything();
