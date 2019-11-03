@@ -3,9 +3,13 @@
 #include "ADC.h"
 #include "delay.h"
 #include <math.h>
+#include <stdio.h>
 
 #define F_INPUT 3000000
 #define SAMPLE_RATE 4
+#define SIZE 10000
+
+float arr[SIZE];
 
 typedef enum{FALSE, TRUE} bool;
 
@@ -52,29 +56,7 @@ int get_sample_count(int f_wave, int F_input, int SAMPLERATE){
 }
 
 void ADC14_IRQHandler(){
-    digital = ADC14->MEM[22];
-    // if samples_time is greater than 32 reset the samples
-    //int var;
-    /*
-    if (sample_count >= (var =get_sample_count(f_wave))){
-        // reset isFirstSample
-        sample_count=0;
-        isFirstSample = TRUE;
-    }
-    */
-    // to init the low and high value
-    /*
-    if(isFirstSample){
-        low = high = digital;
-        isFirstSample = FALSE;
-    }
-    */
-    // Check to see if this value is higher than our curr val(high)
-    high = high < digital? digital : high;
-    // Check to see if this value is low than our curr val (low)
-    low = low > digital? digital : low;
-    sample_count++;
-
+    arr[sample_count++] = ADC14->MEM[22];
 }
 
 // For flag overflows
@@ -118,6 +100,27 @@ void init_TA0(){
 	NVIC->ISER[0] = (1 << (TA0_N_IRQn & 0x1F)); // ifg flag
 	NVIC->ISER[0] = (1 << (TA0_0_IRQn & 0x1F)); // ccr1 interupts
 }
+
+
+void swap(float *xp, float *yp)
+{
+    float temp = *xp;
+    *xp = *yp;
+    *yp = temp;
+}
+
+// A function to implement bubble sort
+void bubbleSort(float arr[], int n)
+{
+    int i, j;
+    for (i = 0; i < n-1; i++)
+
+    // Last i elements are already in place
+    for (j = 0; j < n-i-1; j++)
+        if (arr[j] > arr[j+1])
+            swap(&arr[j], &arr[j+1]);
+}
+
 /**
  * main.c
  */
@@ -145,18 +148,21 @@ void main(void){
     high = 0;
     ADC14->CTL0 |= ADC14_CTL0_SC;
     int var = get_sample_count(500,3*pow(10,6), 16);
+    sample_count = 0;
+    //memset(arr, 0, SIZE);
 	while(1){
 	    ADC14->CTL0 |= ADC14_CTL0_SC;
 	    if (sample_count == var){
-	        sample_count = 0;
-	        high_v = calibrated_voltage(high);
+	        //bubbleSort(arr,sample_count);
+	        high_v = calibrated_voltage(arr[sample_count]);
 	        send_float_UART(high_v);
 	        sendCharUART('\n');
-	        low_v = calibrated_voltage(low);
+	        low_v = calibrated_voltage(arr[0]);
 	        send_float_UART(low_v);
 	        sendCharUART('\n');
 	        Vpp = high_v - low_v;
 	        isFirstSample = TRUE;
+	        sample_count = 0;
 	        low = 30000;
 	        high = 0;
 
