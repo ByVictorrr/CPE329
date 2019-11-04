@@ -21,6 +21,10 @@ int f_wave = 0;
 int ta0_ifg_overflows = 0;
 
 
+
+
+
+
 void barGraph(float voltage){
     int bars = voltage/.1; // volts/100mv
 	int i;
@@ -68,19 +72,21 @@ void TA0_N_IRQHandler(){
 // to get a new TAxR value on rising edge of wave clock
 void TA0_0_IRQHandler(){
 	static int TA0_R_i = 0; // inital TAXR
-    int delta_TA0;
+	int TA0_R_f;
+    uint64_t delta_TA0;
 	// cond 1 - there is a change in the overflows
 	if (ta0_ifg_overflows != 0){
 	    // Step 1 - get difference in cycles with overflow
-	    delta_TA0= (TIMER_A0->R+(0xffff)*ta0_ifg_overflows - TA0_R_i);
+	    delta_TA0= ((TA0_R_f = TIMER_A0->R)+(0xffff)*ta0_ifg_overflows - TA0_R_i);
+	    ta0_ifg_overflows = 0;
 	}else{
 	    // Step q - get difference in cycles no overflow
-	    delta_TA0= (TIMER_A0->R - TA0_R_i);
+	    delta_TA0= ((TA0_R_f = TIMER_A0->R) - TA0_R_i);
 	}
 	// Step 2 - get freq
 	f_wave = F_INPUT/delta_TA0;
 	//Step 3 - get initial rx
-	TA0_R_i = TIMER_A0->R;
+	TA0_R_i = TA0_R_f;
 }
 
 
@@ -99,6 +105,7 @@ void init_TA0(){
 	// step 3 - enable interrupts
 	NVIC->ISER[0] = (1 << (TA0_N_IRQn & 0x1F)); // ifg flag
 	NVIC->ISER[0] = (1 << (TA0_0_IRQn & 0x1F)); // ccr1 interupts
+
 }
 
 
@@ -131,10 +138,9 @@ void main(void){
 	P7->SEL1&=~BIT3;
 	// step 0 - init timer a0 flag
 	init_UART();
-
 	init_ADC14();
 
-	//init_TA0();
+	init_TA0();
 	set_clk("SMCLK");
 	set_DCO(F_INPUT/1000000); //3mhz
 	// step 1 - configure ctl reg
@@ -151,9 +157,10 @@ void main(void){
     sample_count = 0;
     //memset(arr, 0, SIZE);
 	while(1){
+
 	    ADC14->CTL0 |= ADC14_CTL0_SC;
 	    if (sample_count == var){
-	        //bubbleSort(arr,sample_count);
+	        bubbleSort(arr,sample_count);
 	        high_v = calibrated_voltage(arr[sample_count]);
 	        send_float_UART(high_v);
 	        sendCharUART('\n');
