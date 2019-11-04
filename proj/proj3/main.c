@@ -177,7 +177,23 @@ void main(void){
             sendCharUART('\n');
             send_float_UART(low_v);
             sendCharUART('\n');
+
+            // cond 1 - to determine if dc value
+            if (high_v >3.02){
+                high_v = 0;
+                low_v = 0;
+            }else if (low_v <= 0){
+                high_v = 0;
+                low_v = 0;
+            }else if ((Vpp = high_v - low_v) <0.49){
+                high_v = low_v = 0;
+            }else if ((high_v + low_v)/2 >= 2.75){
+                high_v = 0;
+                low_v = 0;
+            }
+
             Vpp = high_v - low_v;
+
             Vrms = sqrt(total_sqr/1000);
             total_sqr = 0;
             sample_count = 0;
