@@ -4,25 +4,24 @@
 #include "delay.h"
 #include <math.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 #define F_INPUT 3000000
 #define MAX_SAMPLE 1000
 
-#define CLEAR "[2J"       //VT100 cmd to clear whole screen
-#define HOME "[H"         //VT100 cmd to home the cursor home
-#define clearLine "[2k"        //Clears the whole line
-
-
-float samples[MAX_SAMPLE] = {0};
+float samples[MAX_SAMPLE];
+float total_sqr = 0.0;
 
 typedef enum{FALSE, TRUE} bool;
 
 int low, high; // for high and low values
+
+bool isFirstSample = TRUE;
 int sample_count = 0;
+
 int f_wave = 1000;
 int ta0_ifg_overflows = 0;
 
+int haha = 0;
 
 
 void barGraph(float voltage){
@@ -33,7 +32,6 @@ void barGraph(float voltage){
 }
 
 void printAll(int dc, int RMS, int AVG, int PP){
-
 
     sendStrUART("============Multimeter================");
     sendVT100UART("[3;2H");
@@ -55,9 +53,17 @@ void printAll(int dc, int RMS, int AVG, int PP){
     barGraph(RMS);
 }
 
-
+// Description: dont add more to tis shit
 void ADC14_IRQHandler(){
-    samples[sample_count++]= ADC14->MEM[22];
+    float voltage;
+    if (high < ( digital= ADC14->MEM[22])){
+        high = digital;
+    }
+    if (low > digital){
+        low = digital;
+    }
+    voltage = calibrated_voltage(digital);
+    total_sqr = total_sqr + voltage*voltage;
 }
 
 // For flag overflows
@@ -68,24 +74,22 @@ void TA0_N_IRQHandler(){
 
 // to get a new TAxR value on rising edge of wave clock
 void TA0_0_IRQHandler(){
-    static int TA0_R_i = 0; // inital TAXR
-    int TA0_R_f;
-        uint64_t delta_TA0;
     // step 1 - clear flag
     TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
     //step 2 - set the adc run
     ADC14-> CTL0 |= ADC14_CTL0_SC | ADC14_CTL0_ENC;
-    int var;
     // step 3 - ccr0 + 1/
-    var = 50+ 1.0/(f_wave) *( F_INPUT * 0.001);
-    TIMER_A0->CCR[0] +=var;
+//    var = 50+ 1.0/(f_wave) *( F_INPUT * 0.001);
+    TIMER_A0->CCR[0] += 3000;
 
-    // step 4 - disable counter
-    if(sample_count >= MAX_SAMPLE){
+    // step 4 - increade counter
+    if(sample_count < MAX_SAMPLE){
+        sample_count++;
+    }else{
         TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIE;
         TIMER_A0->CTL &= ~TIMER_A_CTL_IE;
     }
-    /* =============THIS IS FOR FREQUENCY STUFF======= \
+    /*
     if (ta0_ifg_overflows != 0){
         // Step 1 - get difference in cycles with overflow
         delta_TA0= ((TA0_R_f = TIMER_A0->R)+(0xffff)*ta0_ifg_overflows - TA0_R_i);
@@ -125,54 +129,17 @@ void init_TA0(){
     TIMER_A0->R = 0;
 }
 
-
-int comp(const void *p, const void *q){
-    float l = *(const int *)p;
-    float r = *(const int *)q;
-    return l-r;
-}
-float get_vpp (){
-
-    float high_v, low_v;
-    float Vpp;
-
-    // step 1 - disable cctl
-    TIMER_A0 -> CCTL[0] &= ~TIMER_A_CCTLN_CCIE;
-    // step 2 - sort here
-    qsort((void*)samples, sample_count, sizeof(float), comp);
-    // step 3 - high and low value
-    high_v = calibrated_voltage(samples[0]);
-    low_v = calibrated_voltage(samples[sample_count]);
-
-    //sendCharUART('\n');
-    //send_float_UART(low_v);
-    //sendCharUART('\n');
-    if ( abs(high_v - low_v) > 0.5){
-        Vpp = high_v - low_v;
-    }else{
-        Vpp = high_v;
+float get_rms(float *array, int size){
+    int i ;
+    float total;
+    for ( i = 0 ; i < size; i++){
+        total = total + array[i] * array[i];
     }
-    sample_count = 0;
-    low = 30000;
-    high = 0;
-    TIMER_A0 -> R = 0;
-    TIMER_A0 -> CCTL[0] |= TIMER_A_CCTLN_CCIE;
-    return Vpp;
+    total = total/size;
+    total = sqrt(total);
+    return total;
+
 }
-
-
-float get_rms(float *arr, int size){
-    float Vtot=0;
-    int i;
-    // step 1 - add all voltages up
-    for(i = 0; i< size; i++){
-        Vtot+=arr[i];
-    }
-    // step 2 - divide by SAMPLE count
-    // step 3 - return mean
-    return ((float)Vtot)/size;
-}
-
 
 /**
  * main.c
@@ -186,7 +153,7 @@ void main(void){
     init_UART();
     init_ADC14();
     set_clk("SMCLK");
-     set_DCO(F_INPUT/1000000);
+    set_DCO(F_INPUT/1000000);
 
     init_TA0();
     // step 1 - configure ctl reg
@@ -194,25 +161,34 @@ void main(void){
 
     //f_wave = 200;
    // printAll(3,2,2, 2);
-
+    float high_v, low_v;
+    float Vpp;
+    float Vrms;
     low = 30000; // Low equavilent of 3V
     high = 0; // High equivalent o 0v
     sample_count = 0;
-
-    float VPP, VDC, VRMS;
     while(1){
         if (sample_count >= MAX_SAMPLE){
-        // step 1 - get sample
-            VPP = get_vpp();
-            // step 2 - get rms from sample
-            VRMS = get_rms(samples, sample_count);
-            sendStrUART("VPP: ");
-            send_float_UART(VPP);
-            sendStrUART("VRMS: ");
-            send_float_UART(VRMS);
+
+            TIMER_A0 -> CCTL[0] &= ~TIMER_A_CCTLN_CCIE;
+            high_v = calibrated_voltage(high);
+            low_v = calibrated_voltage(low);
+            send_float_UART(high_v);
+            sendCharUART('\n');
+            send_float_UART(low_v);
+            sendCharUART('\n');
+            Vpp = high_v - low_v;
+            Vrms = sqrt(total_sqr/1000);
+            total_sqr = 0;
+            sample_count = 0;
+            low = 30000;
+            high = 0;
+            TIMER_A0 -> R = 0;
+            TIMER_A0 -> CCTL[0] |= TIMER_A_CCTLN_CCIE;
+
         }
-        printAll(VDC, VRMS, VPP, f_wave);
     }
+
 
 
 }

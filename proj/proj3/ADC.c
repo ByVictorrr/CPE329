@@ -10,8 +10,8 @@
 
 float calibrated_voltage(uint16_t N_ADC){
 	// (16741, 3.3V) - highest value N_ADC can be
-	float m = 2.01*pow(10, -4);
-	float b = -7.27*pow(10, -3);
+	float m = 2.012*pow(10, -4);
+	float b = -7.25*pow(10, -3);
 	if (N_ADC <= 16741){
 		return m*N_ADC+b;
 	}
