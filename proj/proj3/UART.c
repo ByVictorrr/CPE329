@@ -27,7 +27,7 @@ void init_UART(){
 
         // step 3 - configure MCTLW3
         EUSCI_A0->MCTLW |= EUSCI_A_MCTLW_OS16  // enable over sampling
-           // | ( 0x52 << 8)  // second modulation stage select (bits hold a pattern BITCLK)
+            | ( 0x52 << 8)  // second modulation stage select (bits hold a pattern BITCLK)
             | (0xA << 4); // first modulation stage select, determine the modulation pattern for BITCLK16
 
         // Step 4 - clears software rst
@@ -37,7 +37,7 @@ void init_UART(){
         EUSCI_A0->IFG &= ~EUSCI_A_IFG_RXIFG;    // Clear eUSCI RX interrupt flag
         //enable global
         // NVIC
-        NVIC->ISER[0] = 1 << (EUSCIA0_IRQn & 031);
+       // NVIC->ISER[0] = 1 << (EUSCIA0_IRQn & 031);
 
 }
 
@@ -71,7 +71,7 @@ void sendStrUART(char *str){
 }
 
 
-void sendVT100UART(char *str){
+void UARTsendVT100(char *str){
 
     int i;
     while(!(EUSCI_A0->IFG & EUSCI_A_IFG_TXIFG));

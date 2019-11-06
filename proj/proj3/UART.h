@@ -28,6 +28,7 @@ void sendCharUART(char c);
 
 void sendStrUART(char *str);
 
-void sendVT100UART(char *str);
+void UARTsendVT100(char *str);
+
 
 #endif /* UART_H_ */

@@ -3,6 +3,7 @@
 #include "ADC.h"
 #include "delay.h"
 #include <math.h>
+#include "UART.h"
 #include <stdio.h>
 
 
@@ -103,8 +104,16 @@ void TA1_0_IRQHandler(){
 
       TIMER_A1->CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
 }
+void disable_TA1(){
+    TIMER_A1->CTL &= ~TIMER_A_CTL_IE; // disable interputs for TAxR overflowing
+    TIMER_A1->CCTL[0] &= ~TIMER_A_CCTLN_CCIE; // disable interupts
+}
 
-
+void get_freq(){
+    init_TA1();
+    while(freq_flag == 0);
+    disable_TA1();
+}
 
 
 //================================================================================================\\
@@ -152,7 +161,6 @@ void TA0_0_IRQHandler(){
     ADC14-> CTL0 |= ADC14_CTL0_SC | ADC14_CTL0_ENC;
     // step 3 - ccr0 + 1/
     TIMER_A0->CCR[0] += 100+ 1.0/(f_wave) *( F_INPUT * 0.001);
-//	TIMER_A0->CCR[0] += 3000;
 
     // step 4 - increade counter
     if(sample_count < MAX_SAMPLE){
@@ -165,13 +173,13 @@ void TA0_0_IRQHandler(){
     }
 }
 
-void disable_TA1(){
-    TIMER_A1->CTL &= ~TIMER_A_CTL_IE; // disable interputs for TAxR overflowing
-    TIMER_A1->CCTL[0] &= ~TIMER_A_CCTLN_CCIE; // disable interupts
-}
 void disable_TA0(){
     TIMER_A0->CTL &= ~ TIMER_A_CTL_IE; // enable interputs for TAxR overflowing
     TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIE; // enable interupts
+}
+void enable_TA0(){
+  //  TIMER_A0->CTL &= ~ TIMER_A_CTL_IE; // enable interputs for TAxR overflowing
+       TIMER_A0->CCTL[0] |= TIMER_A_CCTLN_CCIE; // enable interupts
 }
 void init_TA0(){
     // step 1 - configure ctl reg
@@ -197,11 +205,10 @@ void init_TA0(){
 
 
 
-void get_vpp_vrms(){
-    init_ADC14();
+void get_vpp_vrms(float *Vrms, float *Vpp){
     init_TA0();
     float high_v, low_v;
-    float Vpp;
+    float Vppp;
     low = 30000;
     high = 0;
     sample_count = 0;
@@ -210,10 +217,7 @@ void get_vpp_vrms(){
             TIMER_A0 -> CCTL[0] &= ~TIMER_A_CCTLN_CCIE;
             high_v = calibrated_voltage(high);
             low_v = calibrated_voltage(low);
-            send_float_UART(high_v);
-            sendCharUART('\n');
-            send_float_UART(low_v);
-            sendCharUART('\n');
+
 
             // cond 1 - to determine if dc value
             if (high_v >3.05){
@@ -222,16 +226,16 @@ void get_vpp_vrms(){
             }else if (low_v <= 0){
                 high_v = 0;
                 low_v = 0;
-            }else if ((Vpp = high_v - low_v) <0.49){
+            }else if ((Vppp = high_v - low_v) <0.49){
                 high_v = low_v = 0;
             }else if ((high_v + low_v)/2 >= 2.75){
                 high_v = 0;
                 low_v = 0;
             }
 
-            Vppp = high_v - low_v;
+            *Vpp = Vppp = high_v - low_v;
 
-            Vrmss = sqrt(total_sqr/1000);
+            *Vrms = Vrmss = sqrt(total_sqr/1000);
             total_sqr = 0;
             sample_count = 0;
             low = 30000;
@@ -245,14 +249,154 @@ void get_vpp_vrms(){
 }
 
 
+//===================================================================\\
+
+//==========================menu shit=======================================\\
+
+#define clear "[2J"       //VT100 cmd to clear whole screen
+#define home "[H"         //VT100 cmd to home the cursor home
+#define clearLine "[2k"        //Clears the whole line
+void Menu(){
+    UARTsendVT100(clear);
+    UARTsendVT100(home);
+    //UARTsendVT100(noCursor);
+    sendStrUART("******************** Multimeter ********************");
+    UARTsendVT100("[3;2H");   ///move cursor to line, column
+    sendStrUART("DC Voltage (V) :");
+
+    UARTsendVT100("[4;2H");   ///move cursor to line, column
+    sendStrUART("Vrms (V) :");
+
+    UARTsendVT100("[5;2H");   ///move cursor to line, column
+    sendStrUART("Vpp (V) :");
 
 
+    UARTsendVT100("[6;2H");   ///move cursor to line, column
+    sendStrUART("Freq(Hz) :");
 
-void get_freq(){
-    init_TA1();
-    while(freq_flag == 0);
-    disable_TA1();
+    UARTsendVT100("[7;2H");   ///move cursor to line, column
+    sendStrUART("DC Graph:");
+    UARTsendVT100("[8;2H");
+    sendStrUART("(10mVperDiv)");
+    UARTsendVT100("[9;2H");
+    sendStrUART("RMS Graph:");
+    UARTsendVT100("[10;2H");
+    sendStrUART("(100mVperDiv)");
+
 }
+// converts voltage value into UART signals
+void sendVoltage (unsigned int temp){
+    unsigned int split_int[]={0,0,0,0};
+    unsigned int i;
+        while(temp >= 10000){
+                    split_int[0]+=1;
+                    temp-=10000;
+                }
+        while(temp >= 1000){
+                split_int[1]+=1;
+                temp-=1000;
+            }
+            while(temp >= 100){
+                split_int[2]+=1;
+                temp-=100;
+            }
+            while(temp >= 10){
+                split_int[3]+=1;
+                temp-=10;
+            }
+    // send 1s place
+            while(!(EUSCI_A0->IFG & EUSCI_A_IFG_TXIFG));
+                                  EUSCI_A0->TXBUF = (char)split_int[0] + 0x30;
+                                  //send decimal point
+            while(!(EUSCI_A0->IFG & EUSCI_A_IFG_TXIFG));
+                                  EUSCI_A0->TXBUF = 0x2E;
+//send rest of the number
+            for(i = 1; i < 4; i++){
+                while(!(EUSCI_A0->IFG & EUSCI_A_IFG_TXIFG));
+                //convert an int to char and send
+                EUSCI_A0->TXBUF = (char)split_int[i]+0x30 ;//removed 0x30
+            }
+            //enter cmd
+            while(!(EUSCI_A0->IFG & EUSCI_A_IFG_TXIFG));
+            EUSCI_A0->TXBUF = 0x0D;
+            //new line cmd
+            while(!(EUSCI_A0->IFG & EUSCI_A_IFG_TXIFG));
+            EUSCI_A0->TXBUF = 0x0A;
+            //reset array
+            for(i = 0; i < 5; i++){
+                split_int[i] = 0;
+            }
+}
+//__________________________________________________________________________________________________
+
+// same as sendVoltage
+void sendFreq (unsigned int temp){
+    unsigned int split_int[]={0,0,0,0};
+    unsigned int i;
+        while(temp >= 1000){
+                    split_int[0]+=1;
+                    temp-=1000;
+                }
+        while(temp >= 100){
+                split_int[1]+=1;
+                temp-=100;
+            }
+            while(temp >= 10){
+                split_int[2]+=1;
+                temp-=10;
+            }
+            while(temp >= 1){
+                split_int[3]+=1;
+                temp-=1;
+            }
+
+            for(i = 1; i < 4; i++){
+                while(!(EUSCI_A0->IFG & EUSCI_A_IFG_TXIFG));
+                //convert an int to char and send
+                EUSCI_A0->TXBUF = (char)split_int[i] + 0x30 ;//removed 0x30
+            }
+            //enter cmd
+            while(!(EUSCI_A0->IFG & EUSCI_A_IFG_TXIFG));
+            EUSCI_A0->TXBUF = 0x0D;
+            //new line cmd
+            while(!(EUSCI_A0->IFG & EUSCI_A_IFG_TXIFG));
+            EUSCI_A0->TXBUF = 0x0A;
+            //reset array
+            for(i = 0; i < 5; i++){
+                split_int[i] = 0;
+            }
+}
+void barGraph(float voltage){
+    int bars = voltage/.1; // volts/100mv
+    int i;
+    for (i=0; i < bars; i++)
+        sendCharUART('|');
+}
+
+//prints values in their respective spots on the terminal
+void getValues(float RMS, float Vpp, unsigned int freq){
+   UARTsendVT100("[3;20H");   ///move cursor to line, column
+   send_float_UART(RMS);
+
+
+   UARTsendVT100("[4;20H");   ///move cursor to line, column
+   send_float_UART(RMS);
+
+   UARTsendVT100("[5;20H");   ///move cursor to line, column
+   send_float_UART(Vpp);
+
+   UARTsendVT100("[6;20H");   ///move cursor to line, column
+   sendFreq(freq);
+
+
+   UARTsendVT100("[7;15H");   ///move cursor to line, column
+   barGraph(RMS);
+   UARTsendVT100("[9;15H");
+   barGraph(RMS);
+}
+
+
+
 
 
 //===================================================================\\
@@ -268,6 +412,7 @@ void main(void){
     init_ADC14();
     __enable_irq();
      //step 1 - configure ctl reg
+    float Vrms, Vpp;
 
     low = LOW_RST;  //Low equavilent of 3V
     high = HIGH_RST;  //High equivalent o 0v
@@ -277,7 +422,10 @@ void main(void){
     while(1){
         get_freq();
         freq_flag=0;
-        get_vpp_vrms();
+        get_vpp_vrms(&Vrms, &Vpp);
+        // print out bar graph
+        Menu();
+        getValues(Vrms,Vpp,f_wave);
     }
 
 
