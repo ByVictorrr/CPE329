@@ -13,7 +13,6 @@ float f_wave = 0;
 int freq_flag = 0;
 int overflow_ta0 = 0;
 int ta0_ifg_overflows = 0;
-int digital;
 
 #define F_INPUT 3000000
 
@@ -160,27 +159,25 @@ void TA0_0_IRQHandler(){
     //step 2 - set the adc run
     ADC14-> CTL0 |= ADC14_CTL0_SC | ADC14_CTL0_ENC;
     // step 3 - ccr0 + 1/
-    TIMER_A0->CCR[0] += 100+ 1.0/(f_wave) *( F_INPUT * 0.001);
+    TIMER_A0->CCR[0] += 3000;
 
     // step 4 - increade counter
     if(sample_count < MAX_SAMPLE){
         sample_count++;
     }else{
-//        TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIE;
-//        TIMER_A0->CCTL[0] |= TIMER_A_CCTLN_CCIFG;
-//        TIMER_A0->CTL &= ~TIMER_A_CTL_IE;
-        __disable_irq();
+        TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIE;
+        TIMER_A0->CTL &= ~TIMER_A_CTL_IE;
     }
 }
 
-void disable_TA0(){
-    TIMER_A0->CTL &= ~ TIMER_A_CTL_IE; // enable interputs for TAxR overflowing
-    TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIE; // enable interupts
-}
-void enable_TA0(){
-  //  TIMER_A0->CTL &= ~ TIMER_A_CTL_IE; // enable interputs for TAxR overflowing
-       TIMER_A0->CCTL[0] |= TIMER_A_CCTLN_CCIE; // enable interupts
-}
+//void disable_TA0(){
+//    TIMER_A0->CTL &= ~ TIMER_A_CTL_IE; // enable interputs for TAxR overflowing
+//    TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIE; // enable interupts
+//}
+//void enable_TA0(){
+//  //  TIMER_A0->CTL &= ~ TIMER_A_CTL_IE; // enable interputs for TAxR overflowing
+//       TIMER_A0->CCTL[0] |= TIMER_A_CCTLN_CCIE; // enable interupts
+//}
 void init_TA0(){
     // step 1 - configure ctl reg
     TIMER_A0->CTL |= TIMER_A_CTL_TASSEL_2 // select smclk
@@ -196,7 +193,7 @@ void init_TA0(){
 
     // step 4 - initalize ccr0
     //TIMER_A0->CCR[0] = 50 + (1.0/(f_wave)* 3000000.0 * 0.001);
-	TIMER_A0->CCR[0] = 30000;
+	TIMER_A0->CCR[0] = 3000;
 
     // step 3 - enable interrupts
     NVIC->ISER[0] = (1 << (TA0_0_IRQn & 0x1F)); // ccr1 interupts
@@ -208,7 +205,6 @@ void init_TA0(){
 void get_vpp_vrms(float *Vrms, float *Vpp){
     init_TA0();
     float high_v, low_v;
-    float Vppp;
     low = 30000;
     high = 0;
     sample_count = 0;
@@ -220,10 +216,7 @@ void get_vpp_vrms(float *Vrms, float *Vpp){
 
 
             // cond 1 - to determine if dc value
-            if (high_v >3.05){
-                high_v = 0;
-                low_v = 0;
-            }else if (low_v <= 0){
+            if (low_v <= 0){
                 high_v = 0;
                 low_v = 0;
             }else if ((Vppp = high_v - low_v) <0.49){
@@ -422,7 +415,7 @@ void main(void){
     while(1){
         get_freq();
         freq_flag=0;
-        get_vpp_vrms(&Vrms, &Vpp);
+//        get_vpp_vrms(&Vrms, &Vpp);
         // print out bar graph
         Menu();
         getValues(Vrms,Vpp,f_wave);
