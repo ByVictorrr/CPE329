@@ -1,17 +1,19 @@
+/*
 #include "msp.h"
 #include "delay.h"
 #include "UART.h"
+#include <math.h>
 
 
-uint16_t f_x = 0;
+float f_x = 0;
 int overflow_ta0 = 0;
 
 
-int st_r = 0;
-int en_r = 0;
-int hi_lo = 1;
+uint32_t st_r = 0.0;
+uint32_t en_r = 0.0;
+uint32_t hi_lo = 1;
 
-#define F_INPUT 3000000
+#define F_INPUT 1500000.0
 
 
 void init_TA0(){
@@ -30,7 +32,7 @@ void init_TA0(){
         TIMER_A0->CTL |= TIMER_A_CTL_TASSEL_2 | //SMCLK
                 TIMER_A_CTL_MC__CONTINUOUS;
 
-//        NVIC->ISER[0] = 1 << ((TA0_N_IRQn) & 31);
+        NVIC->ISER[0] = 1 << ((TA0_N_IRQn) & 31);
         NVIC->ISER[0] = 1 << ((TA0_0_IRQn) & 31);
 
 
@@ -47,22 +49,54 @@ void TA0_N_IRQHandler(){
 uint64_t TA0_R_i = 0;
 uint64_t TA0_R_f = 0;
 
+#define RANGE 1..6
+uint32_t getRealFreq(float wavefreq){
+    uint32_t real_f = 0;
+
+    // real ranges [0,46]
+    if (wavefreq > 0 && wavefreq < 9.37){
+        real_f = 2.09*wavefreq - .107;
+    }else if(wavefreq> 9.37 && wavefreq <= 16){
+        real_f = 3.49*wavefreq-14.4;
+    }else if(wavefreq >16 && wavefreq <=99 ){
+        real_f = (int)wavefreq;
+    }else if (wavefreq>99 && wavefreq <= 170 ){
+        real_f = ceil(wavefreq);
+    }else if (wavefreq>170 && wavefreq <= 300){
+        real_f = ceil(wavefreq) + 1;
+    }else if (wavefreq>300 && wavefreq <= 430){
+        real_f = ceil(wavefreq) + 2;
+    }else if (wavefreq>430 && wavefreq <= 590){
+        real_f = ceil(wavefreq) + 3;
+    }else if (wavefreq>590 && wavefreq <=700){
+        real_f = ceil(wavefreq) + 4;
+    }else if (wavefreq >700 && wavefreq <=830){
+        real_f = ceil(wavefreq) + 5;
+    }else if (wavefreq >830 && wavefreq <=1000){
+        real_f = ceil(wavefreq) + 6;
+    }
+
+    return real_f;
+}
+
+
 // Description: checks if over overflow if so 
 void TA0_0_IRQHandler(){
 
       if (hi_lo == 1){//not first point
           st_r = (0xffff)*overflow_ta0 + TIMER_A0->CCR[0];
-          TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
+
           hi_lo =0;
       }else { //second point
           if (TIMER_A0->CCTL[0] & COV){
               TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_COV;
-              TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
               overflow_ta0 = 0;
+              TIMER_A0->CTL |= TIMER_A_CTL_CLR;
               hi_lo = 1;
           }else{
             en_r = (0xffff)*overflow_ta0 + TIMER_A0->CCR[0];
-            f_x = 1+ F_INPUT/(en_r - st_r);
+            f_x =   F_INPUT/((en_r - st_r));
+            f_x = getRealFreq(f_x);
             hi_lo = 1;
             overflow_ta0 = 0;
             TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
@@ -72,12 +106,12 @@ void TA0_0_IRQHandler(){
 
           }
       }
+
+      TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
 }
 
-uint32_t getFreq(){
-    int m = 1, b = 1;
-    return f_x*m+b;
-}
+
+
 
 void main(){
 
@@ -92,3 +126,4 @@ void main(){
     init_TA0();
     while(1);
 }
+*/
