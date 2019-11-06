@@ -166,7 +166,7 @@ void TA0_0_IRQHandler(){
         sample_count++;
     }else{
         TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIE;
-        TIMER_A0->CTL &= ~TIMER_A_CTL_IE;
+        //TIMER_A0->CTL &= ~TIMER_A_CTL_IE;
     }
 }
 
@@ -192,7 +192,7 @@ void init_TA0(){
     TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIFG; // clear interrupt flag
 
     // step 4 - initalize ccr0
-    //TIMER_A0->CCR[0] = 50 + (1.0/(f_wave)* 3000000.0 * 0.001);
+    //TIMER_A0->CCR[0] = 100 + (1.0/(f_wave)* 3000000.0);
 	TIMER_A0->CCR[0] = 3000;
 
     // step 3 - enable interrupts
@@ -219,6 +219,7 @@ void get_vpp_vrms(float *Vrms, float *Vpp){
             if (low_v <= 0){
                 high_v = 0;
                 low_v = 0;
+
             }else if ((Vppp = high_v - low_v) <0.49){
                 high_v = low_v = 0;
             }else if ((high_v + low_v)/2 >= 2.75){
@@ -415,7 +416,7 @@ void main(void){
     while(1){
         get_freq();
         freq_flag=0;
-//        get_vpp_vrms(&Vrms, &Vpp);
+        get_vpp_vrms(&Vrms, &Vpp);
         // print out bar graph
         Menu();
         getValues(Vrms,Vpp,f_wave);
