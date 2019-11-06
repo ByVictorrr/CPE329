@@ -6,6 +6,11 @@
 uint16_t f_x = 0;
 int overflow_ta0 = 0;
 
+
+int st_r = 0;
+int en_r = 0;
+int hi_lo = 1;
+
 #define F_INPUT 3000000
 
 
@@ -13,21 +18,22 @@ void init_TA0(){
     //Configure Timer 0 for interrupt
 
         TIMER_A0->CTL = TIMER_A_CTL_SSEL__SMCLK | // SMCLK, continuous mode
-                TIMER_A_CTL_MC__CONTINUOUS;
+                TIMER_A_CTL_MC__CONTINUOUS|
+                TIMER_A_CTL_IE; // enable TAxR overflow
 
-        TIMER_A0->CCTL[0] = TIMER_A_CCTLN_CM_1 | //trigger on rising edge
+        TIMER_A0->CCTL[0] = TIMER_A_CCTLN_CM_1 | //Trigger on rising edge
                 TIMER_A_CCTLN_CCIS_0 | //select CCIxA
                 TIMER_A_CCTLN_CCIE | //enable interrupt
-                TIMER_A_CCTLN_CAP |
+                TIMER_A_CCTLN_CAP | // capture mode
                 TIMER_A_CCTLN_SCS; //synchronous
 
         TIMER_A0->CTL |= TIMER_A_CTL_TASSEL_2 | //SMCLK
                 TIMER_A_CTL_MC__CONTINUOUS;
-                //TIMER_A_CTL_CLR |
-                //TIMER_A_CTL_IE;
 
-        NVIC->ISER[0] = 1 << ((TA0_N_IRQn) & 31);
+//        NVIC->ISER[0] = 1 << ((TA0_N_IRQn) & 31);
         NVIC->ISER[0] = 1 << ((TA0_0_IRQn) & 31);
+
+
 
 }
 
@@ -44,14 +50,28 @@ uint64_t TA0_R_f = 0;
 // Description: checks if over overflow if so 
 void TA0_0_IRQHandler(){
 
-    TA0_R_f = TIMER_A0->CCR[0];
-    // Step 1 - get difference in cycles with overflow
-    TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
-    // Step 3 - get freq
-    f_x = F_INPUT/( TA0_R_f + (0xffff)*overflow_ta0 - TA0_R_i);
-    overflow_ta0 = 0;
-    //Step 4 - get initial rx
-    TA0_R_i = TA0_R_f;
+      if (hi_lo == 1){//not first point
+          st_r = (0xffff)*overflow_ta0 + TIMER_A0->CCR[0];
+          TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
+          hi_lo =0;
+      }else { //second point
+          if (TIMER_A0->CCTL[0] & COV){
+              TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_COV;
+              TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
+              overflow_ta0 = 0;
+              hi_lo = 1;
+          }else{
+            en_r = (0xffff)*overflow_ta0 + TIMER_A0->CCR[0];
+            f_x = 1+ F_INPUT/(en_r - st_r);
+            hi_lo = 1;
+            overflow_ta0 = 0;
+            TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
+            if (f_x > 1000){
+                hi_lo =1;
+            }
+
+          }
+      }
 }
 
 uint32_t getFreq(){
@@ -71,7 +91,4 @@ void main(){
     set_DCO(F_INPUT/1000000);
     init_TA0();
     while(1);
-
-
-
 }
