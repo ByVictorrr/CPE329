@@ -98,8 +98,23 @@ void init_UtraSonicSensor(){
 	init_TRIGGER();
 	// step 2 -  
 
-
 }
+double get_distance_cm()
+{
+    // TIMER_A0->CCTL[0]|= TIMER_A_CCTLN_CCIE;
+     send_trigger();
+     P1->IES &= ~ECHO; // detect on rising edge
+     P1->IFG &= 0; // clear ifg flage
+     P1->IE |= ECHO;
+     __delay_cycles(30000);
+     if ((distance_cm = time_high/58)  < 20 && distance_cm !=0){
+         P1->OUT|=BIT0;
+     }else{
+         P1->OUT&=~BIT0;
+     }
+}
+
+
 
 /**
  * main.c
@@ -116,6 +131,7 @@ void main(void)
 	P1->DIR|=BIT0;
 
 	while(1){
+	    /*
 	   // TIMER_A0->CCTL[0]|= TIMER_A_CCTLN_CCIE;
 	    send_trigger();
 	    P1->IES &= ~ECHO; // detect on rising edge
@@ -127,6 +143,8 @@ void main(void)
 		}else{
 		    P1->OUT&=~BIT0;
 		}
+		*/
+
 
 
 	}
