@@ -39,7 +39,7 @@ void init_I2C(uint32_t our_clk, uint32_t min_clk, uint8_t slave_addr){
 
 void send_byte_EEPROM(uint8_t byte){
 	// step 1 - put byte in TXBUF	
-	EUSCI_B0->TXBUF = 0x0F & byte;
+	EUSCI_B0->TXBUF = 0xFF & byte;
 	// step 2 - wwait till fully sent
 	while(!(EUSCI_B0->IFG & EUSCI_B_IFG_TXIFG0));
 	// step 3 - clear ifg flag
@@ -76,8 +76,8 @@ void set_asReceive(){
 
 void transmit_to_EEPROM(uint8_t data, uint8_t device_addr, uint16_t addr_in_EEPROM){
 	// step 0 - sep 
-	uint8_t lower_in_EEPROM = addr_in_EEPROM & 0x0F
-		    ,higher_in_EEPROM = addr_in_EEPROM & 0xF0; 
+	uint8_t lower_in_EEPROM = addr_in_EEPROM & 0x00FF
+		    ,higher_in_EEPROM = ((addr_in_EEPROM & 0xFF00) >> 8);
 	// step 1 - I2C start condition
 	init_transmit();
 	// step 2 - send device addr
@@ -99,15 +99,13 @@ void main(void)
 {
 
 	uint8_t slave_addr = 0x50 | 0x4, data = 0x69; // slave device address and data to be sent
-	uint16_t addr_in_EEPROM = 0x5FFF; // address in eeprom
+	uint16_t addr_in_EEPROM = 0xFFFF; // address in eeprom
 	uint32_t our_clk = 3*pow(10, 6), min_clk = 400 * pow(10, 3); // clk defs
 	set_DCO(our_clk/pow(10, 6)); // 3 mhz
 	set_clk("SMCLK");
 	init_I2C(our_clk,min_clk, slave_addr);
-	/*
-	 * prediction output: (start bit) [1010] | [] | []
-	 */
 
+	/*expected: 0x54, 0x5F, 0xFF, */
 	while(1){
 		// step 1 - send data
 		transmit_to_EEPROM(data, slave_addr, addr_in_EEPROM);

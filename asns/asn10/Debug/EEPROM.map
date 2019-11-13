@@ -1,7 +1,7 @@
 ******************************************************************************
                   TI ARM Linker Unix v18.12.2                  
 ******************************************************************************
->> Linked Wed Nov 13 06:39:06 2019
+>> Linked Wed Nov 13 07:32:05 2019
 
 OUTPUT FILE NAME:   <EEPROM.out>
 ENTRY POINT SYMBOL: "_c_int00_noargs"  address: 00001d9d
@@ -270,7 +270,7 @@ ffffffff  binit
 00000000  interruptVectors              
 00001749  ldexp                         
 00001749  ldexpl                        
-000011ef  main                          
+000011f1  main                          
 00001a4d  memcpy                        
 000000e5  pow                           
 000000e5  powl                          
@@ -306,7 +306,7 @@ address   name
 00001187  init_transmit                 
 00001193  finalize_transmit             
 0000119f  transmit_to_EEPROM            
-000011ef  main                          
+000011f1  main                          
 00001301  __aeabi_dsub                  
 0000130b  __aeabi_dadd                  
 000014b9  sqrt                          
