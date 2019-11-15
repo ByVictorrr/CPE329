@@ -4,11 +4,13 @@
 #define TRIG BIT5
 #define SPEED_OF_SOUND
 #define F_INPUT 3000000
+#define TIMER_A_MAX 0xffff
 
 
 uint16_t rising_edge_counter
           ,falling_edge_counter
-          ,overflows = 0;
+          ,overflows[2] = {0}
+          ,overflow = 0;
 
 /* P2.5 - output (trig)
  * P7.3 - input(TA0.CCI0A) (echo)
@@ -99,16 +101,20 @@ void init_TA0(){
 void TA0_N_IRQHandler(){
 	// Step 1 - check to see the interrupt is from ccr
 	if (TIMER_A0->CCTL[1] & TIMER_A_CCTLN_CCIFG){
-	    falling_edge_counter = TIMER_A0->CCR[1];
+	    overflows[1] = overflow;
+	    falling_edge_counter = TIMER_A0->CCR[1] + (overflows[1] - overflows[0])*TIMER_A_MAX;
 		TIMER_A0->CCTL[1] &= ~TIMER_A_CCTLN_CCIFG;
+		overflow = 0;
 	// Step 2 - else its from overflow
 	}else{
+		overflow++;
 		TIMER_A0->CTL &= ~TIMER_A_CTL_IFG; // clear interrupt flag
 	}
 }
 //description: for ccr0 handler and r overflow
 void TA0_0_IRQHandler(){
     // Step 1 - check to see the interrupt is from ccr
+        overflows[0] = overflow;
         rising_edge_counter = TIMER_A0->CCR[0];
         TIMER_A0->CCTL[0] &=  ~TIMER_A_CCTLN_CCIFG;
 }
@@ -130,9 +136,11 @@ void main(void)
         P1->DIR|=BIT0;
 	while(1){
 	    send_trigger();
-	    delay_us(1000);
+	    /*
+	    delay_us(3000);
 	    if((distance = get_distance_cm()) != 0){
 	        P1->OUT|=BIT0;
 	    }
+	    */
 	}
 }
