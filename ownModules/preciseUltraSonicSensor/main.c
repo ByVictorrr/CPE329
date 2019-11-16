@@ -64,7 +64,7 @@ double get_distance_cm()
     // Step 1 - keep sending till value is valid
     while(got_value == 0){
         send_trigger();
-        delay_us(1000);
+        delay_us(5000);
     }
 
   got_value = 0;
@@ -153,8 +153,12 @@ void main(void)
         __enable_irq();
         distance = get_distance_cm();
         overflows=0;
-        //init_TA0();
-        __enable_irq();
+        TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_COV;
+        TIMER_A0->CTL |= TIMER_A_CTL_CLR;
+        overflows=0;
+        TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
+        TIMER_A0->CCTL[1] &= ~TIMER_A_CCTLN_CCIFG;
+        got_value = 0;
 	            /*
 	    //delay_us(3000);
 	    if((distance = get_distance_cm()) != 0){
