@@ -69,7 +69,7 @@ double get_distance_cm()
 
   got_value = 0;
   uint16_t time_high = get_time_high();
-  float distance = time_high*(.034/2.0);
+  float distance = time_high*.01751 -.207;
 
   return distance;
 
