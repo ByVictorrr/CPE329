@@ -9,8 +9,8 @@
 
 uint16_t rising_edge_counter
           ,falling_edge_counter
-          ,overflows[2] = {0}
-          ,overflow = 0;
+          ,overflows = 0;
+uint16_t got_value = 0;
 
 /* P2.5 - output (trig)
  * P7.3 - input(TA0.CCI0A) (echo)
@@ -61,6 +61,13 @@ uint16_t get_time_high(){
 
 double get_distance_cm()
 {
+    // Step 1 - keep sending till value is valid
+    while(got_value == 0){
+        send_trigger();
+        delay_us(1000);
+    }
+
+  got_value = 0;
   uint16_t time_high = get_time_high();
   float distance = time_high*(.034/2.0);
 
@@ -94,29 +101,38 @@ void init_TA0(){
 
         NVIC->ISER[0] = 1 << ((TA0_N_IRQn) & 31);
         NVIC->ISER[0] = 1 << ((TA0_0_IRQn) & 31);
-        __enable_irq();
 }
 
 // Description: for ccr1 handler and r overflow
 void TA0_N_IRQHandler(){
 	// Step 1 - check to see the interrupt is from ccr
 	if (TIMER_A0->CCTL[1] & TIMER_A_CCTLN_CCIFG){
-	    overflows[1] = overflow;
-	    falling_edge_counter = TIMER_A0->CCR[1] + (overflows[1] - overflows[0])*TIMER_A_MAX;
-		TIMER_A0->CCTL[1] &= ~TIMER_A_CCTLN_CCIFG;
-		overflow = 0;
+	    if (TIMER_A0->CCTL[0]& COV){
+	        TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_COV;
+	        TIMER_A0->CTL |= TIMER_A_CTL_CLR;
+	        overflows=0;
+            TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
+            TIMER_A0->CCTL[1] &= ~TIMER_A_CCTLN_CCIFG;
+	        got_value = 0;
+	    }else{
+	        falling_edge_counter = TIMER_A0->CCR[1] + overflows*TIMER_A_MAX;
+	        got_value = 1;
+	        __disable_irq();
+	    }
+//	    falling_edge_counter = TIMER_A0->CCR[1] + overflows*TIMER_A_MAX;
+//		overflows = 0;
+//		TIMER_A0->CCTL[1] &= ~TIMER_A_CCTLN_CCIFG;
 	// Step 2 - else its from overflow
 	}else{
-		overflow++;
+		overflows++;
 		TIMER_A0->CTL &= ~TIMER_A_CTL_IFG; // clear interrupt flag
 	}
 }
 //description: for ccr0 handler and r overflow
 void TA0_0_IRQHandler(){
     // Step 1 - check to see the interrupt is from ccr
-        overflows[0] = overflow;
         rising_edge_counter = TIMER_A0->CCR[0];
-        TIMER_A0->CCTL[0] &=  ~TIMER_A_CCTLN_CCIFG;
+//        TIMER_A0->CCTL[0] &=  ~TIMER_A_CCTLN_CCIFG;
 }
 
 
@@ -129,18 +145,22 @@ void main(void)
     set_DCO(F_INPUT/pow(10, 6)); // 3mhz
     set_clk("SMCLK");
     init_UtraSonicSensor();
-    __enable_irq();
 
     float distance = 0;
         // Debugging
         P1->DIR|=BIT0;
-	while(1){
-	    send_trigger();
-	    /*
-	    delay_us(3000);
+    while(1){
+        __enable_irq();
+        distance = get_distance_cm();
+        overflows=0;
+        //init_TA0();
+        __enable_irq();
+	            /*
+	    //delay_us(3000);
 	    if((distance = get_distance_cm()) != 0){
 	        P1->OUT|=BIT0;
 	    }
 	    */
-	}
+    }
+
 }
