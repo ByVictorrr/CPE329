@@ -1,10 +1,18 @@
 #include "msp.h"
+#include "delay.h"
+#include "Stepper.h"
 
 
-/**
- * main.c
- */
 void main(void)
 {
-	WDT_A->CTL = WDT_A_CTL_PW | WDT_A_CTL_HOLD;		// stop watchdog timer
+    P5->SEL0 &= ~(STEP | DIRECTION);
+    P5->SEL1 &= ~(STEP | DIRECTION);
+
+    P5->DIR|= (STEP | DIRECTION);
+    // Set the DIRECTIONection
+    P5->OUT|=DIRECTION;
+    while(1){
+        rotate(20, CW);
+        delay_us(10000);
+    }
 }
