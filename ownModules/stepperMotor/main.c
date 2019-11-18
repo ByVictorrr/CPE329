@@ -12,7 +12,7 @@ void main(void)
     // Set the DIRECTIONection
     P5->OUT|=DIRECTION;
     while(1){
-        rotate(20, CW);
+        rotate(1, CCW);
         delay_us(10000);
     }
 }
