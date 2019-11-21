@@ -7,6 +7,7 @@ CMD_SRCS += \
 ../msp432p401r.cmd 
 
 C_SRCS += \
+../DipSwitch.c \
 ../Stepper.c \
 ../UltraSonicSensor.c \
 ../delay.c \
@@ -15,6 +16,7 @@ C_SRCS += \
 ../system_msp432p401r.c 
 
 C_DEPS += \
+./DipSwitch.d \
 ./Stepper.d \
 ./UltraSonicSensor.d \
 ./delay.d \
@@ -23,6 +25,7 @@ C_DEPS += \
 ./system_msp432p401r.d 
 
 OBJS += \
+./DipSwitch.obj \
 ./Stepper.obj \
 ./UltraSonicSensor.obj \
 ./delay.obj \
@@ -31,6 +34,7 @@ OBJS += \
 ./system_msp432p401r.obj 
 
 OBJS__QUOTED += \
+"DipSwitch.obj" \
 "Stepper.obj" \
 "UltraSonicSensor.obj" \
 "delay.obj" \
@@ -39,6 +43,7 @@ OBJS__QUOTED += \
 "system_msp432p401r.obj" 
 
 C_DEPS__QUOTED += \
+"DipSwitch.d" \
 "Stepper.d" \
 "UltraSonicSensor.d" \
 "delay.d" \
@@ -47,6 +52,7 @@ C_DEPS__QUOTED += \
 "system_msp432p401r.d" 
 
 C_SRCS__QUOTED += \
+"../DipSwitch.c" \
 "../Stepper.c" \
 "../UltraSonicSensor.c" \
 "../delay.c" \

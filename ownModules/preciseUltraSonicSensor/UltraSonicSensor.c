@@ -3,10 +3,7 @@
 #include <math.h>
 #include "UltraSonicSensor.h"
 
-uint16_t rising_edge_counter
-          ,falling_edge_counter
-          ,overflows = 0;
-uint16_t got_value = 0;
+
 
 /* P2.5 - output (trig)
  * P7.3 - input(TA0.CCI0A) (echo)
@@ -33,6 +30,8 @@ void init_UltraSonicSensor(){
      set_clk("SMCLK");
      init_ECHO();
      init_TRIGGER();
+     overflows = 0;
+     got_value = 0;
 }
 
 void send_trigger(){
@@ -51,6 +50,7 @@ uint16_t get_time_high(){
 
 double get_distance_cm()
 {
+    reset_TimerA();
     // Step 1 - keep sending till value is valid
     while(got_value == 0){
         send_trigger();
@@ -59,7 +59,7 @@ double get_distance_cm()
 
   uint16_t time_high = get_time_high();
   float distance = time_high*.01751 -.207;
-  reset_TimerA();
+  __disable_irq();
 
   return distance;
 
@@ -117,7 +117,6 @@ void TA0_0_IRQHandler(){
 
 void reset_TimerA(){
     __enable_irq();
-    distance = get_distance_cm();
     overflows=0;
     TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_COV;
     TIMER_A0->CTL |= TIMER_A_CTL_CLR;

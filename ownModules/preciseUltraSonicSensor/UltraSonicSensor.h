@@ -14,6 +14,10 @@
 #define F_INPUT 3000000
 #define TIMER_A_MAX 0xffff
 
+uint16_t rising_edge_counter
+          ,falling_edge_counter
+          ,overflows
+          ,got_value;
 
 
 /* P2.5 - output (trig)
@@ -33,7 +37,9 @@ void TA0_N_IRQHandler();
 void TA0_0_IRQHandler();
 void reset_TimerA();
 void init_UltraSonicSensor();
-void main(void)
-
+/*
+void enable_ISR_TA0();
+void disable_ISR_TA0();
+*/
 
 #endif /* ULTRASONICSENSOR_H_ */

@@ -36,6 +36,8 @@ void TA0_N_IRQHandler();
 void TA0_0_IRQHandler();
 void reset_TimerA();
 void init_UltraSonicSensor();
-
+void disable_ISR_TIMERA();
+void enable_ISR_TIMERA();
+double get_distance_cm_avg();
 
 #endif /* ULTRASONICSENSOR_H_ */

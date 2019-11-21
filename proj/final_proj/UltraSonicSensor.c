@@ -65,6 +65,26 @@ double get_distance_cm()
 }
 
 
+double get_distance_cm_avg(){
+    int SIZE = 5;
+    int i;
+    float arr[5];
+    float avg = 0, lowest; // to determine if the hardware if bad;
+    for (i = 0; i<SIZE; i++)
+    {
+        arr[i] = get_distance_cm();
+        avg += arr[i];
+    }
+    avg /=SIZE;
+    lowest = avg;
+    for (i = 0; i < 5;i++)
+    {
+        if (arr[i] < lowest){
+            lowest = arr[i];
+        }
+    }
+    return lowest;
+}
 
 void init_TA0(){
 
@@ -99,7 +119,7 @@ void TA0_N_IRQHandler(){
         }else{
             falling_edge_counter = TIMER_A0->CCR[1] + overflows*TIMER_A_MAX;
             got_value = 1;
-            __disable_irq();
+            disable_ISR_TIMERA();
         }
     // Step 2 - else its from overflow
     }else{
@@ -113,9 +133,17 @@ void TA0_0_IRQHandler(){
     rising_edge_counter = TIMER_A0->CCR[0];
 }
 
-
+void enable_ISR_TIMERA(){
+    TIMER_A0->CTL |=TIMER_A_CTL_IE; // enable TAxR overflow
+    TIMER_A0->CCTL[0] |= TIMER_A_CCTLN_CCIE; //enable interrupt
+    TIMER_A0->CCTL[1] |= TIMER_A_CCTLN_CCIE; //enable interrupt
+}
+void disable_ISR_TIMERA(){
+    TIMER_A0->CTL &=~TIMER_A_CTL_IE; // enable TAxR overflow
+    TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIE; //enable interrupt
+    TIMER_A0->CCTL[1] &= ~TIMER_A_CCTLN_CCIE; //enable interrupt
+}
 void reset_TimerA(){
-    __enable_irq();
     overflows=0;
     TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_COV;
     TIMER_A0->CTL |= TIMER_A_CTL_CLR;
@@ -123,4 +151,5 @@ void reset_TimerA(){
     TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
     TIMER_A0->CCTL[1] &= ~TIMER_A_CCTLN_CCIFG;
     got_value = 0;
+    enable_ISR_TIMERA();
 }
