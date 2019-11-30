@@ -65,25 +65,21 @@ double get_distance_cm()
 }
 
 
-double get_distance_cm_avg(){
-    int SIZE = 5;
+double get_distance_cm_max(){
+    const int SIZE = 10;
     int i;
-    float arr[5];
-    float avg = 0, lowest; // to determine if the hardware if bad;
+    float arr[SIZE];
     for (i = 0; i<SIZE; i++)
     {
         arr[i] = get_distance_cm();
-        avg += arr[i];
     }
-    avg /=SIZE;
-    lowest = avg;
-    for (i = 0; i < 5;i++)
-    {
-        if (arr[i] < lowest){
-            lowest = arr[i];
-        }
+    return get_max(arr, SIZE);
+}
+double get_max(float *arr, int size){
+    if (size == 1){
+        return arr[0];
     }
-    return lowest;
+    return new_max(arr[0], get_max(arr+1, size-1));
 }
 
 void init_TA0(){

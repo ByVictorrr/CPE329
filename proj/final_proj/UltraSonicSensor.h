@@ -13,7 +13,7 @@
 #define TRIG BIT5
 #define F_INPUT 3000000
 #define TIMER_A_MAX 0xffff
-
+#define new_max(x,y) ((x) >= (y)) ? (x) : (y)
 uint16_t rising_edge_counter
           ,falling_edge_counter
           ,overflows
@@ -26,6 +26,7 @@ uint16_t rising_edge_counter
  *
  *
  */
+double get_max(float *arr, int size);
 void init_ECHO();
 void init_TRIGGER();
 void send_trigger();
@@ -38,6 +39,6 @@ void reset_TimerA();
 void init_UltraSonicSensor();
 void disable_ISR_TIMERA();
 void enable_ISR_TIMERA();
-double get_distance_cm_avg();
+double get_distance_cm_max();
 
 #endif /* ULTRASONICSENSOR_H_ */

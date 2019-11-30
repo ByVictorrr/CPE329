@@ -21,9 +21,9 @@ float _do(float di){
 	else
 		return _do_var;
 }
-int get_revolutions(float *di){
+float get_revolutions(float *di){
 	float diff = _do(di[CURR]) - _do(di[PREV]);
-	return ceil(diff/CIRCUMFERNCE);
+	return diff/CIRCUMFERNCE;
 }
 
 
@@ -48,7 +48,7 @@ void main(void)
 		// STATE 1 - normal mode
 	    if (dip_switch == NORMAL_MODE){
 			// step 1 - get di from get distance
-			di[CURR] = get_distance_cm_avg();
+			di[CURR] = get_distance_cm_max();
 			delay_us(1000);
 			// step 2 - then use this to get revs  needed embeded is the direction
 			revolutions = get_revolutions(di);

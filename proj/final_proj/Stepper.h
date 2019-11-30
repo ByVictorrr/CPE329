@@ -22,6 +22,6 @@ typedef enum{CCW, CW} direction_t;
 void init_Stepper(direction_t direction);
 void step(int steps);
 void set_direction(direction_t direction);
-void rotate(int revolutions, direction_t direction);
+void rotate(float revolutions, direction_t direction);
 
 #endif /* STEPPER_H_ */

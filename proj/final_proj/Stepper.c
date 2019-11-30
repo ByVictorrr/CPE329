@@ -27,10 +27,15 @@ void step(int steps){
     }
 }
 
-void rotate(int revolutions, direction_t direction){
-    int i;
+void rotate(float revolutions, direction_t direction){
+    int i, integral_revolutions = (int)revolutions;
+    float decimal_revolutions = revolutions - integral_revolutions;
     set_direction(direction);
-    for (i = 0; i < abs(revolutions); i++)
+    // Case 1 - for just the integral part
+    for (i = 0; i < abs(integral_revolutions); i++)
         step(STEP_PER_REV);
+    // Case 2 - for the decimal part of revolutions
+    if (decimal_revolutions)
+        step(abs(STEP_PER_REV*decimal_revolutions));
 }
 
