@@ -2,7 +2,7 @@
 #include "Stepper.h"
 #include "delay.h"
 #include "UltraSonicSensor.h"
-#include "DipSwitch.h"
+#include "bluetooth.h"
 #include <math.h>
 
 #define FOCAL_LENGTH 20.0 // cm
@@ -38,7 +38,7 @@ void main(void)
 	direction_t direction;
 	init_UltraSonicSensor();
 	init_Stepper(CW);
-	init_DipSwitch();
+	init_BT();
 	__enable_irq();
 
 	di[PREV] = RESET_DI; // this is going to have to use the reset of do
@@ -46,9 +46,9 @@ void main(void)
 	while(1){
 
 		// STATE 1 - normal mode
-	    if (dip_switch == NORMAL_MODE){
+	    if (bt == NORMAL_MODE){
 			// step 1 - get di from get distance
-			di[CURR] = get_distance_cm_max();
+ 			di[CURR] = get_distance_cm_max();
 			delay_us(1000);
 			// step 2 - then use this to get revs  needed embeded is the direction
 			revolutions = get_revolutions(di);

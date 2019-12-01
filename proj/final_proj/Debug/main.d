@@ -20,7 +20,7 @@ main.obj: /opt/ccstudio/ccs/ccs_base/arm/include/system_msp432p401r.h
 main.obj: ../Stepper.h
 main.obj: ../delay.h
 main.obj: ../UltraSonicSensor.h
-main.obj: ../DipSwitch.h
+main.obj: ../bluetooth.h
 main.obj: /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/math.h
 main.obj: /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/_ti_config.h
 main.obj: /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/linkage.h
@@ -47,7 +47,7 @@ main.obj: /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/machin
 ../Stepper.h: 
 ../delay.h: 
 ../UltraSonicSensor.h: 
-../DipSwitch.h: 
+../bluetooth.h: 
 /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/math.h: 
 /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/_ti_config.h: 
 /opt/ccstudio/ccs/tools/compiler/ti-cgt-arm_18.12.2.LTS/include/linkage.h: 
