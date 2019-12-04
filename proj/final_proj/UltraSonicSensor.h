@@ -26,7 +26,7 @@ uint16_t rising_edge_counter
  *
  *
  */
-double get_max(float *arr, int size);
+int get_max_index(int *arr, int size);
 void init_ECHO();
 void init_TRIGGER();
 void send_trigger();
@@ -40,5 +40,6 @@ void init_UltraSonicSensor();
 void disable_ISR_TIMERA();
 void enable_ISR_TIMERA();
 double get_distance_cm_max();
+
 
 #endif /* ULTRASONICSENSOR_H_ */

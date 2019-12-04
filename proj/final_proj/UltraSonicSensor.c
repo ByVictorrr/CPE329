@@ -63,23 +63,54 @@ double get_distance_cm()
   return distance;
 
 }
+void swap(float *xp, float *yp)
+{
+    float temp = *xp;
+    *xp = *yp;
+    *yp = temp;
+}
+void linearSort(float *arr, int size)
+{
+    int i, j;
+    for(i = 0; i < size-1; i++)
+        for(j = 0; j < size - 1; j++)
+            if (arr[j] > arr[j+1])
+                swap(&arr[j], &arr[j+1]);
+}
 
 
 double get_distance_cm_max(){
-    const int SIZE = 10;
-    int i;
+    const int SIZE = 10, THRESHOLD = 2;
+    int i, j, dict[SIZE] = {0};
     float arr[SIZE];
+
+    // Step 1 - get size datapoints
     for (i = 0; i<SIZE; i++)
-    {
         arr[i] = get_distance_cm();
-    }
-    return get_max(arr, SIZE);
+    // step 2 - perform a lin search on arr
+    linearSort(arr, SIZE);
+    // Step 3 - using a dictionary to determine how many adj are close to number
+    for (i = 0; i < SIZE-1; i ++)
+        for(j = i; j < SIZE-1; j++)
+            if (arr[j] > 1 && abs(arr[j] - arr[j+1]) < THRESHOLD)
+                dict[i]++;
+            else
+                break;
+
+    // Step 4 - return the most numbers that are close to that number
+    return arr[get_max_index(dict, SIZE)];
 }
-double get_max(float *arr, int size){
-    if (size == 1){
-        return arr[0];
-    }
-    return new_max(arr[0], get_max(arr+1, size-1));
+
+
+
+int get_max_index(int *arr, int size){
+    int i, max = arr[0], max_index = 0;
+    for(i=1; i<size; i++)
+        if (arr[i] > max){
+            max = arr[i];
+            max_index = i;
+        }
+    return max_index;
 }
 
 void init_TA0(){

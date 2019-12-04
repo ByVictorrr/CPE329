@@ -44,7 +44,6 @@ void main(void)
 	di[PREV] = RESET_DI; // this is going to have to use the reset of do
 	direction = CW;
 	while(1){
-
 		// STATE 1 - normal mode
 	    if (bt == NORMAL_MODE){
 			// step 1 - get di from get distance

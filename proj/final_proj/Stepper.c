@@ -35,7 +35,9 @@ void rotate(float revolutions, direction_t direction){
     for (i = 0; i < abs(integral_revolutions); i++)
         step(STEP_PER_REV);
     // Case 2 - for the decimal part of revolutions
+    /* Had to get rid of because sensors not accurate engough
     if (decimal_revolutions)
         step(abs(STEP_PER_REV*decimal_revolutions));
+        */
 }
 
