@@ -110,7 +110,7 @@ void Home_LCD(){
 void Write_char_LCD(char c){
     delay_us(0);
     P4->OUT = c >> 4;
-    P4->OUT |= (c >> 2 & 0x30);//11_0000);
+    //P4->OUT |= (c >> 2 & 0x30);//11_0000);
     P2->OUT &= ~(EN | RS | RW); // set EN, RS, RW, low
     P2->OUT |= RS; // NEON
 
